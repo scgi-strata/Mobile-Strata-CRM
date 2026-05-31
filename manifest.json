@@ -1,0 +1,15 @@
+{
+  "name": "Strata CRM",
+  "short_name": "Strata CRM",
+  "description": "Strata Consultancy Group — CRM",
+  "start_url": "/Mobile-Strata-CRM/mobile.html",
+  "scope": "/Mobile-Strata-CRM/",
+  "display": "standalone",
+  "background_color": "#0f2d6b",
+  "theme_color": "#0f2d6b",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

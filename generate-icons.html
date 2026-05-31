@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Strata Icon Generator</title>
+<style>
+body { font-family: sans-serif; background: #f0f4f8; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; }
+.preview { display: flex; gap: 24px; align-items: flex-end; }
+canvas { border-radius: 22%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+p { color: #555; font-size: 14px; }
+</style>
+</head>
+<body>
+<h2 style="color:#0f2d6b">Strata CRM Icon Generator</h2>
+<div class="preview">
+  <div style="text-align:center"><canvas id="c192" width="192" height="192"></canvas><br><small>192×192</small></div>
+  <div style="text-align:center"><canvas id="c512" width="512" height="512"></canvas><br><small>512×512</small></div>
+</div>
+<p id="status">Generating icons…</p>
+
+<script>
+function drawIcon(canvas) {
+  const s = canvas.width;
+  const ctx = canvas.getContext('2d');
+
+  // Navy rounded background
+  const r = s * 0.18;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(s - r, 0);
+  ctx.arcTo(s, 0, s, r, r);
+  ctx.lineTo(s, s - r);
+  ctx.arcTo(s, s, s - r, s, r);
+  ctx.lineTo(r, s);
+  ctx.arcTo(0, s, 0, s - r, r);
+  ctx.lineTo(0, r);
+  ctx.arcTo(0, 0, r, 0, r);
+  ctx.closePath();
+  ctx.fillStyle = '#0f2d6b';
+  ctx.fill();
+
+  // Scale SVG paths (original viewBox 0 0 100 100) to canvas size
+  const sc = s / 100;
+  ctx.save();
+  ctx.scale(sc, sc);
+
+  // Left pillar
+  ctx.beginPath();
+  ctx.moveTo(20, 80); ctx.lineTo(20, 30);
+  ctx.quadraticCurveTo(20, 20, 30, 18);
+  ctx.lineTo(42, 16); ctx.lineTo(42, 75); ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fill();
+
+  // Centre pillar
+  ctx.beginPath();
+  ctx.moveTo(44, 14); ctx.lineTo(56, 14);
+  ctx.quadraticCurveTo(62, 14, 62, 22);
+  ctx.lineTo(62, 78); ctx.lineTo(44, 78); ctx.closePath();
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  // Right pillar
+  ctx.beginPath();
+  ctx.moveTo(64, 16); ctx.lineTo(76, 18);
+  ctx.quadraticCurveTo(86, 20, 86, 30);
+  ctx.lineTo(86, 80); ctx.lineTo(64, 75); ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function download(canvas, filename) {
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+window.addEventListener('load', () => {
+  const c192 = document.getElementById('c192');
+  const c512 = document.getElementById('c512');
+  drawIcon(c192);
+  drawIcon(c512);
+
+  // Auto-download both
+  setTimeout(() => {
+    download(c192, 'icon-192.png');
+    setTimeout(() => {
+      download(c512, 'icon-512.png');
+      document.getElementById('status').textContent =
+        '✓ Both files downloaded — icon-192.png and icon-512.png. Add them to your GitHub repo.';
+      document.getElementById('status').style.color = '#1e5c35';
+    }, 500);
+  }, 300);
+});
+</script>
+</body>
+</html>

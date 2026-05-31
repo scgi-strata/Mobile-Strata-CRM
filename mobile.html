@@ -1,0 +1,2961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Strata CRM</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f2d6b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Strata CRM">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" id="ati" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" onload="gsiLoaded()"></script>
+<script>
+  if(localStorage.getItem('strata_dark')==='1') document.documentElement.classList.add('dark-early');
+  // Generate fallback PWA icon if no icon-192.png exists
+  (function(){
+    try {
+      const c=document.createElement('canvas'); c.width=c.height=192;
+      const x=c.getContext('2d');
+      // Navy background with rounded corners
+      x.fillStyle='#0f2d6b';
+      x.beginPath();
+      x.moveTo(32,0); x.lineTo(160,0); x.arcTo(192,0,192,32,32);
+      x.lineTo(192,160); x.arcTo(192,192,160,192,32);
+      x.lineTo(32,192); x.arcTo(0,192,0,160,32);
+      x.lineTo(0,32); x.arcTo(0,0,32,0,32);
+      x.closePath(); x.fill();
+      // White S
+      x.fillStyle='#ffffff';
+      x.font='bold 110px Arial,sans-serif';
+      x.textAlign='center'; x.textBaseline='middle';
+      x.fillText('S',96,100);
+      // Set as apple-touch-icon fallback
+      const ati=document.getElementById('ati');
+      if(ati) ati.href=c.toDataURL('image/png');
+    } catch(e){}
+  })();
+</script>
+<style>
+:root {
+  --bg: #f0f4f8; --surface: #ffffff; --surface2: #e8eef5;
+  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
+  --text: #1a1e2e; --text2: #4a5568; --text3: #a0aec0;
+  --accent: #0f2d6b; --accent2: #1a4fa8; --accent-light: #e6edf8;
+  --red: #c0392b; --red-bg: #fdf1f0;
+  --amber: #b35c00; --amber-bg: #fef7ec;
+  --blue: #1a4fa8; --blue-bg: #e6edf8;
+  --green: #1e5c35; --green-bg: #eef6f1;
+  --purple: #4a3580; --purple-bg: #f0edfb;
+  --teal: #0f5a50; --teal-bg: #e8f4f3;
+  --gray: #555560; --gray-bg: #e8eef5;
+  --hdr: 56px; --tab: 56px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --radius: 12px; --radius-sm: 8px;
+}
+body.dark, html.dark-early body {
+  --bg: #0d1117; --surface: #161b22; --surface2: #1c2333;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --text: #e6edf3; --text2: #8b949e; --text3: #484f58;
+  --accent: #1a4fa8; --accent2: #2563c4; --accent-light: #1a2744;
+  --red: #f85149; --red-bg: #2d1216;
+  --amber: #d29922; --amber-bg: #2a1f0a;
+  --blue: #4a9fd4; --blue-bg: #0d1f35;
+  --green: #3fb950; --green-bg: #0f2a14;
+  --purple: #8b7dd8; --purple-bg: #1e1635;
+  --teal: #2dd4bf; --teal-bg: #0d2a27;
+  --gray: #8b949e; --gray-bg: #1c2333;
+}
+html.dark-early { background: #0d1117; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
+  font-size: 14px; line-height: 1.5;
+  -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
+}
+
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed; inset: 0; background: var(--accent);
+  display: flex; align-items: center; justify-content: center; z-index: 200;
+  padding: 24px; padding-top: calc(24px + var(--safe-t));
+}
+#login-screen.hidden { display: none; }
+.login-box {
+  background: var(--surface); border-radius: 20px;
+  padding: 32px 28px; width: 100%; max-width: 360px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+}
+.login-logo {
+  width: 52px; height: 52px; background: var(--accent2); border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px; font-size: 22px; color: #fff; font-weight: 700;
+}
+.login-title { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 3px; }
+.login-sub { font-size: 12px; color: var(--text2); text-align: center; margin-bottom: 24px; }
+.login-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.login-field label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text2); }
+.login-field input {
+  padding: 12px 14px; border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 16px; color: var(--text); background: var(--bg); outline: none;
+  transition: border-color 0.15s;
+}
+.login-field input:focus { border-color: var(--accent2); }
+.login-btn {
+  width: 100%; padding: 14px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius-sm); font-family: inherit;
+  font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 6px; transition: background 0.15s;
+}
+.login-btn:hover { background: var(--accent2); }
+.login-error { font-size: 12px; color: var(--red); text-align: center; margin-top: 8px; min-height: 18px; }
+
+/* ── APP SHELL ── */
+#app { display: none; position: fixed; inset: 0; }
+#app.visible { display: block; }
+
+/* ── HEADER ── */
+#app-header {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding-top: var(--safe-t); background: var(--accent); z-index: 100;
+}
+.hdr-inner {
+  height: var(--hdr); display: flex; align-items: center;
+  padding: 0 14px; gap: 10px;
+}
+#back-btn {
+  display: none; width: 36px; height: 36px; flex-shrink: 0;
+  align-items: center; justify-content: center;
+  border: none; background: rgba(255,255,255,0.14); border-radius: 10px;
+  color: #fff; font-size: 22px; line-height: 1; cursor: pointer;
+}
+#back-btn.visible { display: flex; }
+#hdr-title { flex: 1; font-size: 16px; font-weight: 600; color: #fff; }
+#sync-pill {
+  font-size: 10px; font-family: 'DM Mono', monospace;
+  padding: 3px 9px; border-radius: 10px;
+  background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.55);
+  white-space: nowrap;
+}
+#sync-pill.live { background: rgba(63,185,80,0.22); color: #3fb950; }
+#sync-pill.error { background: rgba(248,81,73,0.22); color: #f85149; }
+#sync-pill.syncing { color: rgba(255,255,255,0.8); }
+
+/* ── SCREEN WRAP ── */
+#screen-wrap {
+  position: fixed;
+  top: calc(var(--hdr) + var(--safe-t));
+  bottom: calc(var(--tab) + var(--safe-b));
+  left: 0; right: 0; overflow: hidden;
+}
+.screen {
+  display: none; position: absolute; inset: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+.screen.active { display: block; }
+
+/* ── TAB BAR ── */
+#tab-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding-bottom: var(--safe-b); background: var(--surface);
+  border-top: 1px solid var(--border); z-index: 100;
+}
+#tab-bar.hidden { display: none; }
+.tabbar-inner { height: var(--tab); display: flex; }
+.tab-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  font-size: 10px; font-weight: 500; color: var(--text3); transition: color 0.15s;
+}
+.tab-btn.active { color: var(--accent2); }
+.tab-icon { font-size: 19px; line-height: 1; }
+
+/* ── MORE SHEET ── */
+#more-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 150; backdrop-filter: blur(2px);
+}
+#more-overlay.visible { display: block; }
+#more-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: var(--surface); border-radius: 20px 20px 0 0;
+  z-index: 160; padding: 0 0 calc(16px + var(--safe-b));
+  transform: translateY(100%); transition: transform 0.3s ease;
+}
+#more-sheet.open { transform: translateY(0); }
+.sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 14px auto 12px; }
+.sheet-ttl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); padding: 0 20px; margin-bottom: 4px; }
+.sheet-item {
+  display: flex; align-items: center; gap: 14px; padding: 14px 20px;
+  border: none; background: none; width: 100%; text-align: left;
+  cursor: pointer; font-family: inherit; font-size: 15px; color: var(--text);
+  transition: background 0.12s;
+}
+.sheet-item:active { background: var(--surface2); }
+.sheet-icon { font-size: 19px; width: 24px; text-align: center; flex-shrink: 0; }
+.sheet-item.danger { color: var(--red); }
+.sheet-div { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ── TOAST ── */
+#toast-wrap {
+  position: fixed; left: 16px; right: 16px;
+  bottom: calc(var(--tab) + var(--safe-b) + 12px);
+  z-index: 500; pointer-events: none;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: #1a1e2e; color: #fff; padding: 12px 16px;
+  border-radius: var(--radius-sm); font-size: 13px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  animation: toastIn 0.2s ease; pointer-events: auto;
+}
+.toast.success { background: #1e5c35; }
+.toast.error { background: #c0392b; }
+.toast.saving { background: #b35c00; }
+@keyframes toastIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── METRIC GRID ── */
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.metric-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 12px;
+}
+.metric-card.accent { background: var(--accent); border-color: transparent; }
+.metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 5px; }
+.metric-card.accent .metric-label { color: rgba(255,255,255,0.5); }
+.metric-value { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+.metric-card.accent .metric-value { color: #fff; }
+.metric-value.danger { color: var(--red); }
+.metric-value.warn { color: var(--amber); }
+.metric-value.info { color: var(--blue); }
+.metric-delta { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* ── SECTION CARD ── */
+.s-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 16px; margin-bottom: 12px; overflow: hidden; }
+.s-card-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.s-card-head h3 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); }
+.s-count { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); background: var(--surface2); padding: 2px 8px; border-radius: 10px; }
+
+/* ── LIST ROWS ── */
+.list-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.list-row:last-child { border-bottom: none; }
+.row-left { flex: 1; min-width: 0; }
+.row-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.row-meta { text-align: right; flex-shrink: 0; }
+.row-date { font-size: 11px; font-weight: 600; color: var(--red); white-space: nowrap; }
+.row-ago { font-size: 10px; color: var(--text3); white-space: nowrap; }
+
+/* ── BADGES ── */
+.badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 5px; white-space: nowrap; }
+.badge-gray { background: var(--gray-bg); color: var(--gray); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); }
+.badge-teal { background: var(--teal-bg); color: var(--teal); }
+
+/* ── SYNC BTN ── */
+.sync-btn-m {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius-sm); font-family: inherit;
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+}
+.sync-btn-m:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── EMPTY STATE ── */
+.empty-st { text-align: center; padding: 40px 20px; color: var(--text2); }
+.empty-icon { font-size: 36px; margin-bottom: 12px; }
+.empty-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.empty-sub { font-size: 13px; line-height: 1.6; }
+.list-empty { padding: 16px 0; text-align: center; color: var(--text3); font-size: 13px; }
+
+/* ── HEADER ACTION BUTTONS ── */
+#hdr-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.hdr-btn {
+  padding:6px 14px; border-radius:8px; border:none; cursor:pointer;
+  font-family:inherit; font-size:13px; font-weight:600;
+  background:rgba(255,255,255,0.15); color:#fff; transition:background 0.15s;
+}
+.hdr-btn:active { background:rgba(255,255,255,0.25); }
+.hdr-btn-primary { background:#fff; color:var(--accent); }
+.hdr-btn-primary:active { background:rgba(255,255,255,0.9); }
+
+/* ── SEARCH BAR ── */
+.search-wrap { position:relative; margin-bottom:12px; }
+.search-wrap input {
+  width:100%; padding:11px 14px 11px 38px; border:1px solid var(--border2);
+  border-radius:var(--radius-sm); font-family:inherit; font-size:16px;
+  color:var(--text); background:var(--surface); outline:none; transition:border-color 0.15s;
+}
+.search-wrap input:focus { border-color:var(--accent2); }
+.search-icon {
+  position:absolute; left:13px; top:50%; transform:translateY(-50%);
+  font-size:15px; color:var(--text3); pointer-events:none;
+}
+
+/* ── FILTER CHIPS ── */
+.filter-row { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.filter-chip {
+  padding:6px 14px; border-radius:20px; border:1px solid var(--border2);
+  background:var(--surface); font-family:inherit; font-size:12px; font-weight:600;
+  color:var(--text2); cursor:pointer; transition:all 0.15s; white-space:nowrap;
+}
+.filter-chip.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+/* ── CLIENT CARDS ── */
+.client-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:transform 0.1s;
+  border-left-width:3px; border-left-style:solid; border-left-color:transparent;
+  active-transform:scale(0.98);
+}
+.client-card:active { transform:scale(0.99); }
+.client-card.cc-red { border-left-color:var(--red); }
+.client-card.cc-amber { border-left-color:var(--amber); }
+.client-card.cc-green { border-left-color:var(--green); }
+.cc-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.cc-name { font-size:15px; font-weight:600; line-height:1.3; flex:1; min-width:0; }
+.cc-rows { display:flex; flex-direction:column; gap:0; }
+.cc-row { display:flex; align-items:baseline; gap:8px; padding:3px 0; font-size:12px; border-bottom:1px solid var(--border); }
+.cc-row:last-child { border-bottom:none; }
+.cc-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text3); width:88px; flex-shrink:0; }
+.cc-rval { color:var(--text2); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cc-rval.overdue { color:var(--red); font-weight:600; }
+.cc-rval.warn { color:var(--amber); font-weight:500; }
+.cc-rval.notes { font-style:italic; color:var(--text3); }
+.cc-count { font-size:11px; color:var(--text3); text-align:center; padding:10px 0; }
+/* ── SETTINGS ── */
+.settings-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; margin-bottom:12px;
+}
+.settings-card h3 { font-size:14px; font-weight:600; margin-bottom:4px; }
+.settings-card p { font-size:12px; color:var(--text2); margin-bottom:12px; line-height:1.5; }
+.conn-pill {
+  display:inline-block; font-size:11px; font-weight:600; padding:3px 10px;
+  border-radius:10px; margin-bottom:12px;
+}
+.conn-pill.connected { background:var(--green-bg); color:var(--green); }
+.conn-pill.not-connected { background:var(--red-bg); color:var(--red); }
+.settings-msg { font-size:12px; color:var(--text2); margin-top:8px; min-height:16px; }
+.settings-msg.ok { color:var(--green); }
+.settings-msg.err { color:var(--red); }
+.settings-row-btns { display:flex; gap:8px; margin-top:12px; }
+.settings-row-btns button { flex:1; }
+.settings-section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text3); margin:16px 0 10px; }
+.toggle-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 0; border-bottom:1px solid var(--border);
+}
+.toggle-row:last-child { border-bottom:none; }
+.toggle-label { font-size:14px; color:var(--text); }
+.toggle-switch {
+  width:44px; height:26px; background:var(--border2); border-radius:13px;
+  position:relative; cursor:pointer; transition:background 0.2s; border:none; flex-shrink:0;
+}
+.toggle-switch.on { background:var(--accent2); }
+.toggle-switch::after {
+  content:''; position:absolute; width:20px; height:20px; background:#fff;
+  border-radius:50%; top:3px; left:3px; transition:transform 0.2s;
+  box-shadow:0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-switch.on::after { transform:translateX(18px); }
+.grant-write-btn {
+  width:100%; padding:12px; background:rgba(63,185,80,0.1); color:var(--green);
+  border:1px solid rgba(63,185,80,0.3); border-radius:var(--radius-sm); font-family:inherit;
+  font-size:14px; font-weight:600; cursor:pointer; transition:background 0.15s;
+}
+.grant-write-btn:active { background:rgba(63,185,80,0.2); }
+
+/* ── PROVIDER CARDS ── */
+.prov-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; margin-bottom:8px; cursor:pointer;
+}
+.prov-card:active { opacity:0.9; }
+.prov-name { font-size:15px; font-weight:600; margin-bottom:8px; }
+.prov-rows { display:flex; flex-direction:column; gap:0; }
+.prov-row { display:flex; gap:8px; padding:4px 0; font-size:12px; border-bottom:1px solid var(--border); align-items:baseline; }
+.prov-row:last-child { border-bottom:none; }
+.prov-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text3); width:64px; flex-shrink:0; }
+.prov-val { color:var(--text2); flex:1; word-break:break-all; }
+
+/* ── QUOTATION CARDS ── */
+.quote-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; margin-bottom:8px; cursor:pointer;
+}
+.quote-card:active { opacity:0.9; }
+.quote-card.released { opacity:0.7; }
+.quote-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.quote-id { font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); }
+.quote-client { font-size:14px; font-weight:600; margin-top:1px; }
+.quote-rows { display:flex; flex-direction:column; gap:0; }
+.quote-row { display:flex; align-items:baseline; gap:8px; padding:3px 0; font-size:12px; border-bottom:1px solid var(--border); }
+.quote-row:last-child { border-bottom:none; }
+.quote-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text3); width:78px; flex-shrink:0; }
+.quote-val { color:var(--text2); flex:1; }
+.quote-val.overdue { color:var(--red); font-weight:600; }
+
+/* ── RENEWALS URGENCY CHIPS ── */
+.urg-chips { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+.urg-chip {
+  border:none; border-radius:var(--radius-sm); padding:10px 8px; cursor:pointer;
+  font-family:inherit; text-align:center; transition:opacity 0.15s; border-left:3px solid transparent;
+}
+.urg-chip:active { opacity:0.8; }
+.urg-chip.active { outline:2px solid currentColor; outline-offset:1px; }
+.urg-chip-count { font-size:22px; font-weight:700; line-height:1; }
+.urg-chip-label { font-size:11px; font-weight:600; margin-top:2px; }
+.urg-chip-sub { font-size:10px; margin-top:1px; }
+.urg-chip.expired { background:var(--red-bg); border-left-color:var(--red); color:var(--red); }
+.urg-chip.critical { background:var(--red-bg); border-left-color:var(--red); color:var(--red); }
+.urg-chip.soon { background:var(--amber-bg); border-left-color:var(--amber); color:var(--amber); }
+.urg-chip.upcoming { background:var(--blue-bg); border-left-color:var(--blue); color:var(--blue); }
+.urg-chip.future { background:var(--gray-bg); border-left-color:var(--gray); color:var(--gray); }
+
+/* ── RENEWAL CARDS ── */
+.ren-group-label {
+  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em;
+  padding:4px 0 6px; margin-top:4px;
+}
+.ren-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; margin-bottom:8px; cursor:pointer; border-left-width:3px; border-left-style:solid;
+}
+.ren-card:active { opacity:0.9; }
+.ren-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.ren-card-name { font-size:14px; font-weight:600; flex:1; }
+.ren-days { font-size:13px; font-weight:700; white-space:nowrap; }
+.ren-card-meta { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; color:var(--text2); }
+.ren-meta-item { display:flex; gap:4px; align-items:center; }
+.ren-meta-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--text3); }
+
+/* ── COA CARDS ── */
+.coa-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:transform 0.1s;
+}
+.coa-card:active { transform:scale(0.99); }
+.coa-card.coa-done { opacity:0.65; cursor:default; }
+.coa-card-top { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+.coa-task-text { flex:1; font-size:14px; font-weight:500; line-height:1.4; }
+.coa-done-label { font-size:11px; font-weight:600; color:var(--green); white-space:nowrap; padding-top:2px; }
+.coa-quick-btn {
+  width:34px; height:34px; flex-shrink:0; border:none; background:var(--green-bg);
+  color:var(--green); border-radius:50%; font-size:16px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition:background 0.15s;
+}
+.coa-quick-btn:active { background:var(--green); color:#fff; }
+.coa-card-meta { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--text2); }
+.coa-meta-item { display:flex; align-items:center; gap:4px; }
+.coa-meta-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text3); }
+
+/* ── COMPLETE SCREEN ── */
+.task-info-card { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; }
+.task-info-row { display:flex; gap:10px; padding:5px 0; font-size:13px; }
+.task-info-label { color:var(--text3); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; width:90px; flex-shrink:0; padding-top:1px; }
+.task-info-val { color:var(--text); flex:1; }
+.task-info-task { font-size:14px; font-weight:600; color:var(--text); line-height:1.4; }
+.complete-divider { height:1px; background:var(--border2); margin:18px 0; }
+.complete-section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); margin-bottom:14px; }
+
+/* ── DETAIL TABS ── */
+.detail-tabs { display:flex; gap:2px; padding:0 0 14px; border-bottom:1px solid var(--border); margin-bottom:14px; }
+.detail-tab {
+  flex:1; padding:9px 4px; border:none; background:none; cursor:pointer;
+  font-family:inherit; font-size:13px; font-weight:500; color:var(--text3);
+  border-bottom:2px solid transparent; transition:all 0.15s; text-align:center;
+}
+.detail-tab.active { color:var(--accent2); border-bottom-color:var(--accent2); }
+.open-edit-btn {
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; padding:14px 16px; margin-top:8px;
+  border:1px solid var(--border2); border-radius:var(--radius);
+  background:var(--surface); font-family:inherit; font-size:14px;
+  font-weight:500; color:var(--accent2); cursor:pointer;
+}
+.open-edit-btn:active { background:var(--surface2); }
+.qp-hint { font-size:12px; color:var(--text2); line-height:1.6; margin-bottom:14px; }
+
+/* ── HISTORY ENTRIES ── */
+.history-entry { padding:12px 0; border-bottom:1px solid var(--border); }
+.history-entry:last-child { border-bottom:none; }
+.history-time { font-size:11px; color:var(--text3); margin-bottom:6px; }
+.history-time span { color:var(--accent2); }
+.history-body { font-size:12px; color:var(--text2); line-height:1.6; }
+.history-change { font-size:12px; color:var(--text2); white-space:pre-wrap; margin-top:4px; }
+.history-assigned { font-size:11px; color:var(--text3); margin-top:2px; }
+
+/* ── DETAIL SECTIONS ── */
+.detail-section { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+.detail-section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); padding:12px 16px 6px; }
+.detail-row { display:flex; padding:8px 16px; border-bottom:1px solid var(--border); gap:12px; }
+.detail-row:last-child { border-bottom:none; }
+.detail-label { font-size:11px; color:var(--text3); width:110px; flex-shrink:0; padding-top:1px; }
+.detail-val { font-size:13px; color:var(--text); flex:1; word-break:break-word; }
+.detail-val.muted { color:var(--text3); }
+.detail-notes { padding:12px 16px; font-size:13px; color:var(--text2); line-height:1.6; white-space:pre-wrap; }
+
+/* ── FORM FIELDS ── */
+.form-section { margin-bottom:16px; }
+.form-section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); margin-bottom:10px; }
+.form-group { margin-bottom:14px; }
+.form-label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text2); margin-bottom:5px; }
+.form-input {
+  width:100%; padding:11px 12px; border:1px solid var(--border2); border-radius:var(--radius-sm);
+  font-family:inherit; font-size:16px; color:var(--text); background:var(--surface); outline:none;
+  transition:border-color 0.15s; -webkit-appearance:none;
+}
+.form-input:focus { border-color:var(--accent2); }
+.form-select {
+  width:100%; padding:11px 12px; border:1px solid var(--border2); border-radius:var(--radius-sm);
+  font-family:inherit; font-size:16px; color:var(--text); background:var(--surface); outline:none;
+  -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a0aec0' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center;
+  padding-right:34px;
+}
+textarea.form-input { min-height:90px; resize:vertical; }
+.form-error { font-size:12px; color:var(--red); margin-top:6px; min-height:16px; }
+
+/* ── CHIP TOGGLES ── */
+.chip-group { display:flex; flex-wrap:wrap; gap:8px; padding:4px 0; }
+.chip-opt {
+  padding:7px 14px; border-radius:20px; border:1px solid var(--border2);
+  background:var(--surface); font-family:inherit; font-size:13px; font-weight:500;
+  color:var(--text2); cursor:pointer; transition:all 0.15s; white-space:nowrap;
+}
+.chip-opt.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.chip-opt:active { opacity:0.8; }
+
+/* ── DELETE SECTION (edit form bottom) ── */
+.delete-zone { margin-top:24px; padding-top:16px; border-top:1px solid var(--border); }
+.delete-zone-label { font-size:11px; color:var(--text3); margin-bottom:10px; text-align:center; }
+.btn-danger-m {
+  width:100%; padding:13px; background:var(--red-bg); color:var(--red);
+  border:1px solid var(--red); border-radius:var(--radius-sm); font-family:inherit;
+  font-size:14px; font-weight:600; cursor:pointer; transition:background 0.15s;
+}
+.btn-danger-m:active { background:var(--red); color:#fff; }
+
+/* ── DELETE CONFIRM SHEET ── */
+#del-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:170; }
+#del-overlay.visible { display:block; }
+#del-sheet {
+  position:fixed; left:0; right:0; bottom:0; background:var(--surface);
+  border-radius:20px 20px 0 0; z-index:180;
+  padding:0 0 calc(16px + var(--safe-b));
+  transform:translateY(100%); transition:transform 0.3s ease;
+}
+#del-sheet.open { transform:translateY(0); }
+#del-sheet .del-body { padding:0 20px 4px; }
+#del-desc { font-size:14px; color:var(--text2); line-height:1.6; padding:4px 20px 14px; }
+.del-name { font-weight:600; color:var(--text); }
+
+/* ── CONTACT CARDS (multi-contact) ── */
+.contact-card {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px; margin-bottom:10px; position:relative;
+}
+.contact-card-hd {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.contact-card-num { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text3); }
+.contact-card .form-group { margin-bottom:8px; }
+.contact-card .form-group:last-child { margin-bottom:0; }
+.contact-card .form-label { color:var(--text3); }
+.remove-contact-btn {
+  border:none; background:var(--red-bg); color:var(--red); border-radius:6px;
+  width:28px; height:28px; font-size:16px; cursor:pointer; line-height:1;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.add-contact-btn {
+  width:100%; padding:11px; border:1px dashed var(--border2); border-radius:var(--radius-sm);
+  background:none; font-family:inherit; font-size:13px; font-weight:600;
+  color:var(--text2); cursor:pointer; transition:all 0.15s; margin-top:2px;
+}
+.add-contact-btn:active { background:var(--surface2); }
+
+/* ── ADD CLIENT HEADER BTN — visibility managed via inline style only ── */
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">S</div>
+    <div class="login-title">Strata CRM</div>
+    <div class="login-sub">Strata Consultancy Group</div>
+    <div class="login-field">
+      <label>Your Name</label>
+      <input type="text" id="manual-name" placeholder="e.g. Juan dela Cruz" autocomplete="name" autocapitalize="words">
+    </div>
+    <div class="login-field">
+      <label>Team Passcode</label>
+      <input type="password" id="manual-code" placeholder="Enter passcode" onkeydown="if(event.key==='Enter')manualSignIn()">
+    </div>
+    <button class="login-btn" onclick="manualSignIn()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="app-header">
+    <div class="hdr-inner">
+      <button id="back-btn" onclick="goBack()">‹</button>
+      <div id="hdr-title">Dashboard</div>
+      <div id="hdr-right">
+        <button id="hdr-dark-btn" onclick="toggleDarkM()" style="border:none;background:rgba(255,255,255,0.12);color:#fff;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">🌙</button>
+        <div id="sync-pill">—</div>
+        <button id="hdr-add-btn" class="hdr-btn" style="display:none" onclick="openClientEdit(null)">+ New</button>
+        <button id="hdr-coa-add-btn" class="hdr-btn" style="display:none" onclick="openCOAEdit(null)">+ New</button>
+        <button id="hdr-quote-add-btn" class="hdr-btn" style="display:none" onclick="openQuoteEdit(null)">+ New</button>
+        <button id="hdr-prov-add-btn" class="hdr-btn" style="display:none" onclick="openProviderEdit(null)">+ New</button>
+        <button id="hdr-edit-btn" class="hdr-btn" style="display:none" onclick="openClientEditFromDetail()">Edit</button>
+        <button id="hdr-save-btn" class="hdr-btn hdr-btn-primary" style="display:none" onclick="hdrSave()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREENS -->
+  <div id="screen-wrap">
+
+    <!-- DASHBOARD -->
+    <div id="screen-dashboard" class="screen active">
+      <!-- no-data state -->
+      <div id="dash-empty" class="empty-st" style="display:none">
+        <div class="empty-icon">☁</div>
+        <div class="empty-title">No data loaded</div>
+        <div class="empty-sub">Tap sync to load live data from Google Sheets.</div>
+        <button class="sync-btn-m" id="sync-btn-empty" onclick="syncAll()" style="margin-top:20px">↻ Sync from Google Sheets</button>
+      </div>
+      <!-- data state -->
+      <div id="dash-data">
+        <div class="metric-grid" id="dash-metrics"></div>
+
+        <div class="s-card">
+          <div class="s-card-head">
+            <h3>Overdue Follow-ups</h3>
+            <span class="s-count" id="dash-ov-cnt">0</span>
+          </div>
+          <div id="dash-ov-list"></div>
+        </div>
+
+        <div class="s-card">
+          <div class="s-card-head">
+            <h3>Open COA Tasks</h3>
+            <span class="s-count" id="dash-coa-cnt">0</span>
+          </div>
+          <div id="dash-coa-list"></div>
+        </div>
+
+        <button class="sync-btn-m" id="sync-btn" onclick="syncAll()" style="margin-top:4px">↻ Sync from Google Sheets</button>
+      </div>
+    </div>
+
+    <!-- CLIENTS LIST -->
+    <div id="screen-clients" class="screen">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="search" id="clients-search" placeholder="Search clients…" autocomplete="off" oninput="renderClients()">
+      </div>
+      <div class="filter-row">
+        <button class="filter-chip active" id="fc-active" onclick="setClientFilter('active')">Active</button>
+        <button class="filter-chip" id="fc-closed" onclick="setClientFilter('closed')">Closed</button>
+        <button class="filter-chip" id="fc-revisit" onclick="setClientFilter('revisit')">Revisit</button>
+        <button class="filter-chip" id="fc-all" onclick="setClientFilter('all')">All</button>
+      </div>
+      <div id="clients-list"></div>
+    </div>
+
+    <!-- CLIENT DETAIL -->
+    <div id="screen-client-detail" class="screen">
+      <div class="detail-tabs">
+        <button class="detail-tab active" id="dt-tab-overview" onclick="setDetailTab('overview')">Overview</button>
+        <button class="detail-tab" id="dt-tab-edit" onclick="setDetailTab('edit')">Edit</button>
+        <button class="detail-tab" id="dt-tab-history" onclick="setDetailTab('history')">History</button>
+      </div>
+      <div id="dt-overview"></div>
+      <div id="dt-edit" style="display:none"></div>
+      <div id="dt-history" style="display:none"></div>
+    </div>
+
+    <!-- CLIENT EDIT -->
+    <div id="screen-client-edit" class="screen">
+      <div id="client-edit-error" class="form-error" style="margin-bottom:12px"></div>
+
+      <div class="form-group">
+        <label class="form-label">Client Name <span style="color:var(--red)">*</span></label>
+        <input class="form-input" type="text" id="ef-name" placeholder="Company or individual name" autocapitalize="words">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <textarea class="form-input" id="ef-address" placeholder="Business address" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Contact Persons</label>
+        <div id="ef-contacts-wrap"></div>
+        <button type="button" class="add-contact-btn" onclick="addContactM()">+ Add Contact</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Industry</label>
+        <select class="form-select" id="ef-industry"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Business Type</label>
+        <select class="form-select" id="ef-biztype"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Type of Insurance</label>
+        <select class="form-select" id="ef-instype"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Renewal Date</label>
+        <input class="form-input" type="date" id="ef-renewal">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Current Provider</label>
+        <div class="chip-group" id="ef-curprovider"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Target Provider</label>
+        <div class="chip-group" id="ef-provider"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="ef-status"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Contact Type</label>
+        <select class="form-select" id="ef-contacttype"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Assigned</label>
+        <div class="chip-group" id="ef-assigned"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Last Contact Date</label>
+        <input class="form-input" type="date" id="ef-lastcontact">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Next Follow-up Date</label>
+        <input class="form-input" type="date" id="ef-followup">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input" id="ef-notes" placeholder="Internal notes…" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Client Documentation</label>
+        <input class="form-input" type="url" id="ef-docs" placeholder="https://drive.google.com/…">
+      </div>
+
+      <div class="delete-zone" id="ef-delete-zone">
+        <div class="delete-zone-label">Danger Zone</div>
+        <button class="btn-danger-m" onclick="showDeleteSheetM()">Delete Client</button>
+      </div>
+
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="screen-settings" class="screen">
+
+      <!-- Google Sheets Connection -->
+      <div class="settings-card">
+        <h3>Google Sheets Connection</h3>
+        <p>Spreadsheet ID and OAuth Client ID needed to read and write live data.</p>
+        <div id="m-conn-pill" class="conn-pill not-connected">not connected</div>
+        <div class="form-group">
+          <label class="form-label">Spreadsheet ID</label>
+          <input class="form-input" type="text" id="m-cfg-sheet-id" placeholder="Paste your Spreadsheet ID here" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Google API Key <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(for reading)</span></label>
+          <input class="form-input" type="password" id="m-cfg-api-key" placeholder="AIza...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">OAuth Client ID <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(for writing)</span></label>
+          <input class="form-input" type="text" id="m-cfg-client-id" placeholder="xxxx.apps.googleusercontent.com" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div class="settings-row-btns">
+          <button class="sync-btn-m" onclick="saveConfigM()">Save &amp; Connect</button>
+          <button class="sync-btn-m" style="background:var(--surface2);color:var(--text)" onclick="testConnectionM()">Test</button>
+        </div>
+        <div class="settings-msg" id="m-cfg-msg"></div>
+      </div>
+
+      <!-- Grant Write Access -->
+      <div class="settings-card">
+        <h3>Write Access</h3>
+        <p>Grant OAuth write permission so edits sync to Google Sheets. Do this after setting your Client ID.</p>
+        <button class="grant-write-btn" onclick="requestWriteAccess(null)">✎ Grant Write Access</button>
+      </div>
+
+      <!-- Team Passcode -->
+      <div class="settings-card">
+        <h3>Team Passcode</h3>
+        <p>Shared passcode for manual sign-in (without Google OAuth).</p>
+        <div class="form-group">
+          <label class="form-label">Passcode</label>
+          <input class="form-input" type="password" id="m-cfg-passcode" placeholder="Set a team passcode">
+        </div>
+        <button class="sync-btn-m" onclick="savePasscodeM()">Save Passcode</button>
+        <div class="settings-msg" id="m-passcode-msg"></div>
+      </div>
+
+      <!-- Sheet Names -->
+      <div class="settings-card">
+        <h3>Sheet Names</h3>
+        <div class="form-group">
+          <label class="form-label">Clients</label>
+          <input class="form-input" type="text" id="m-cfg-clients-sheet" value="Client">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quotations</label>
+          <input class="form-input" type="text" id="m-cfg-quotes-sheet" value="Quotations">
+        </div>
+        <div class="form-group">
+          <label class="form-label">COA</label>
+          <input class="form-input" type="text" id="m-cfg-coa-sheet" value="COA">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Providers</label>
+          <input class="form-input" type="text" id="m-cfg-providers-sheet" value="ProviderEmails">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Client History</label>
+          <input class="form-input" type="text" id="m-cfg-clientsummary-sheet" value="ClientSummary">
+        </div>
+        <div class="form-group">
+          <label class="form-label">COA History</label>
+          <input class="form-input" type="text" id="m-cfg-coahistory-sheet" value="COAHistory">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deleted Records</label>
+          <input class="form-input" type="text" id="m-cfg-deleted-sheet" value="Deleted">
+        </div>
+        <button class="sync-btn-m" onclick="saveSheetNamesM()">Save Sheet Names</button>
+        <div class="settings-msg" id="m-sheets-msg"></div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="settings-card">
+        <h3>Appearance</h3>
+        <div class="toggle-row">
+          <span class="toggle-label">Dark Mode</span>
+          <button class="toggle-switch" id="dark-toggle-m" onclick="toggleDarkM()"></button>
+        </div>
+      </div>
+
+      <!-- Signed In As -->
+      <div class="settings-card">
+        <h3>Account</h3>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Signed in as <strong id="m-user-name">—</strong></div>
+        <button class="btn-danger-m" onclick="signOut()">Sign Out</button>
+      </div>
+
+      <div style="height:8px"></div>
+    </div>
+
+    <!-- PROVIDERS LIST -->
+    <div id="screen-providers" class="screen">
+      <div id="prov-list"></div>
+    </div>
+
+    <!-- PROVIDER ADD / EDIT -->
+    <div id="screen-provider-edit" class="screen">
+      <div id="prov-edit-error" class="form-error" style="margin-bottom:12px"></div>
+      <div class="form-group">
+        <label class="form-label">Provider Name <span style="color:var(--red)">*</span></label>
+        <input class="form-input" type="text" id="pe-provider" placeholder="e.g. Maxicare" autocapitalize="words">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Honorifics</label>
+        <input class="form-input" type="text" id="pe-honorifics" placeholder="Ms. / Mr.">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contact Person</label>
+        <input class="form-input" type="text" id="pe-contact" placeholder="Full name" autocapitalize="words">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="pe-email" placeholder="provider@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">CC</label>
+        <input class="form-input" type="text" id="pe-cc" placeholder="email1@..., email2@...">
+      </div>
+      <div class="delete-zone" id="pe-delete-zone">
+        <div class="delete-zone-label">Danger Zone</div>
+        <button class="btn-danger-m" onclick="showProviderDeleteSheetM()">Delete Provider</button>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- QUOTATIONS LIST -->
+    <div id="screen-quotations" class="screen">
+      <div class="filter-row">
+        <button class="filter-chip active" id="qt-fc-pending" onclick="setQuoteFilter('pending')">Pending</button>
+        <button class="filter-chip" id="qt-fc-released" onclick="setQuoteFilter('released')">Released</button>
+      </div>
+      <div class="search-wrap" style="margin-bottom:10px">
+        <span class="search-icon">⌕</span>
+        <input type="search" id="qt-search" placeholder="Search quotations…" autocomplete="off" oninput="renderQuotations()">
+      </div>
+      <div id="qt-list"></div>
+    </div>
+
+    <!-- QUOTE DETAIL -->
+    <div id="screen-quote-detail" class="screen">
+      <div id="quote-detail-content"></div>
+    </div>
+
+    <!-- QUOTE ADD / EDIT -->
+    <div id="screen-quote-edit" class="screen">
+      <div id="quote-edit-error" class="form-error" style="margin-bottom:12px"></div>
+
+      <div class="form-group">
+        <label class="form-label">Client</label>
+        <select class="form-select" id="qe-clientid" onchange="qeClientChanged()"></select>
+      </div>
+      <div class="form-group" id="qe-client-name-row">
+        <label class="form-label">Client Name</label>
+        <input class="form-input" type="text" id="qe-client" readonly style="background:var(--surface2);color:var(--text2)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Provider</label>
+        <select class="form-select" id="qe-provider"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Rates</label>
+        <select class="form-select" id="qe-rates">
+          <option value="">—</option>
+          <option value="SME">SME</option>
+          <option value="Corporate">Corporate</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Franchise Date</label>
+        <input class="form-input" type="date" id="qe-fdate">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Franchise Ending Date</label>
+        <input class="form-input" type="date" id="qe-fend">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Initial Email Sent</label>
+        <input class="form-input" type="date" id="qe-email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Date Released</label>
+        <input class="form-input" type="date" id="qe-released">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">TOR &amp; SOB</label>
+        <select class="form-select" id="qe-tor">
+          <option value="">—</option>
+          <option value="Y">Y</option>
+          <option value="N">N</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Follow-up Date</label>
+        <input class="form-input" type="date" id="qe-followup">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Special Requests</label>
+        <textarea class="form-input" id="qe-requests" placeholder="Special requests or notes…" rows="3"></textarea>
+      </div>
+
+      <div class="delete-zone" id="qe-delete-zone">
+        <div class="delete-zone-label">Danger Zone</div>
+        <button class="btn-danger-m" onclick="showQuoteDeleteSheetM()">Delete Quotation</button>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- CLIENT HISTORY -->
+    <div id="screen-client-history" class="screen">
+      <div id="client-history-content"></div>
+    </div>
+
+    <!-- COA LIST -->
+    <div id="screen-coa" class="screen">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="search" id="coa-search" placeholder="Search tasks…" autocomplete="off" oninput="renderCOA()">
+      </div>
+      <div class="filter-row">
+        <button class="filter-chip active" id="coa-fc-open" onclick="setCOAFilter('open')">Open</button>
+        <button class="filter-chip" id="coa-fc-done" onclick="setCOAFilter('done')">Done</button>
+        <button class="filter-chip" id="coa-fc-all" onclick="setCOAFilter('all')">All</button>
+      </div>
+      <div id="coa-list"></div>
+    </div>
+
+    <!-- COA COMPLETE -->
+    <div id="screen-coa-complete" class="screen">
+      <div id="coa-complete-error" class="form-error" style="margin-bottom:10px"></div>
+      <div class="task-info-card" id="coa-task-info"></div>
+      <div class="complete-divider"></div>
+      <div class="complete-section-title">Completion Details</div>
+      <div class="form-group">
+        <label class="form-label">Completion Date <span style="color:var(--red)">*</span></label>
+        <input class="form-input" type="date" id="cc-date">
+      </div>
+      <div id="cc-client-fields">
+        <div class="form-group">
+          <label class="form-label">New Client Status <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — update if changed)</span></label>
+          <select class="form-select" id="cc-status"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Next Follow-up Date <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — leave blank to keep existing)</span></label>
+          <input class="form-input" type="date" id="cc-followup">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Completion Notes <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">What happened? e.g. "Called client, confirmed meeting for June 3."</div>
+        <textarea class="form-input" id="cc-notes" placeholder="Leave blank if nothing to add…" rows="3"></textarea>
+      </div>
+      <div id="cc-save-info" style="font-size:12px;color:var(--text3);line-height:1.7;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px"></div>
+      <div style="height:8px"></div>
+    </div>
+
+    <!-- COA ADD / EDIT -->
+    <div id="screen-coa-edit" class="screen">
+      <div id="coa-edit-error" class="form-error" style="margin-bottom:12px"></div>
+      <div class="form-group">
+        <label class="form-label">Activity Date <span style="color:var(--red)">*</span></label>
+        <input class="form-input" type="date" id="ce-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client</label>
+        <select class="form-select" id="ce-clientid" onchange="ceClientChanged()"></select>
+      </div>
+      <div class="form-group" id="ce-client-name-row" style="display:none">
+        <label class="form-label">Client Name</label>
+        <input class="form-input" type="text" id="ce-client" readonly style="background:var(--surface2);color:var(--text2)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contact Type</label>
+        <select class="form-select" id="ce-contacttype"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Task Description <span style="color:var(--red)">*</span></label>
+        <textarea class="form-input" id="ce-task" placeholder="Describe the activity or task…" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assigned</label>
+        <div class="chip-group" id="ce-assigned"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date Completed <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(leave blank if still open)</span></label>
+        <input class="form-input" type="date" id="ce-completed">
+      </div>
+      <div class="delete-zone" id="ce-delete-zone">
+        <div class="delete-zone-label">Danger Zone</div>
+        <button class="btn-danger-m" onclick="showCOADeleteSheetM()">Delete Task</button>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- RENEWALS -->
+    <div id="screen-renewals" class="screen">
+      <div class="urg-chips" id="ren-chips"></div>
+      <div class="search-wrap" style="margin-bottom:10px">
+        <span class="search-icon">⌕</span>
+        <input type="search" id="ren-search" placeholder="Search renewals…" autocomplete="off" oninput="renderRenewals()">
+      </div>
+      <div id="ren-list"></div>
+    </div>
+
+  </div><!-- /screen-wrap -->
+
+  <!-- TAB BAR -->
+  <div id="tab-bar">
+    <div class="tabbar-inner">
+      <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <span class="tab-icon">◈</span><span>Dash</span>
+      </button>
+      <button class="tab-btn" data-tab="clients" onclick="switchTab('clients')">
+        <span class="tab-icon">◎</span><span>Clients</span>
+      </button>
+      <button class="tab-btn" data-tab="coa" onclick="switchTab('coa')">
+        <span class="tab-icon">◷</span><span>COA</span>
+      </button>
+      <button class="tab-btn" data-tab="renewals" onclick="switchTab('renewals')">
+        <span class="tab-icon">⏰</span><span>Renewals</span>
+      </button>
+      <button class="tab-btn" data-tab="more" onclick="openMore()">
+        <span class="tab-icon" style="letter-spacing:-1px">···</span><span>More</span>
+      </button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- DELETE CONFIRM SHEET -->
+<div id="del-overlay" onclick="closeDeleteSheet()"></div>
+<div id="del-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-ttl">Confirm Delete</div>
+  <div id="del-desc"></div>
+  <div class="del-body">
+    <div class="form-group">
+      <label class="form-label">Enter Passcode to Confirm</label>
+      <input class="form-input" type="password" id="del-passcode" placeholder="Team passcode">
+    </div>
+    <div id="del-error" style="color:var(--red);font-size:12px;margin-bottom:10px;min-height:16px"></div>
+    <button id="del-confirm-btn" class="sync-btn-m" style="background:var(--red);margin-bottom:10px" onclick="confirmDeleteM()">Delete Permanently</button>
+    <button style="width:100%;padding:12px;border:none;background:none;color:var(--text2);font-size:14px;cursor:pointer;font-family:inherit" onclick="closeDeleteSheet()">Cancel</button>
+  </div>
+</div>
+
+<!-- MORE SHEET -->
+<div id="more-overlay" onclick="closeMore()"></div>
+<div id="more-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-ttl">More</div>
+  <button class="sheet-item" onclick="closeMore();openQuotations()">
+    <span class="sheet-icon">◻</span> Quotations
+  </button>
+  <button class="sheet-item" onclick="closeMore();openProviders()">
+    <span class="sheet-icon">◆</span> Providers
+  </button>
+  <div class="sheet-div"></div>
+  <button class="sheet-item" onclick="closeMore();openSettings()">
+    <span class="sheet-icon">⚙</span> Settings
+  </button>
+  <div class="sheet-div"></div>
+  <button class="sheet-item danger" onclick="closeMore();signOut()">
+    <span class="sheet-icon">⏏</span> Sign out
+  </button>
+</div>
+
+<!-- TOAST -->
+<div id="toast-wrap"></div>
+
+<script>
+// ── CONSTANTS ──
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const BASE_STATUSES = ['Newly Contacted','Negotiation','For Quotation','For Presentation','Closing','Closed Won','Closed Lost','Revisit'];
+const CLOSED_STATUSES = ['Closed Won','Closed Lost'];
+const INACTIVE_STATUSES = ['Closed Won','Closed Lost','Revisit'];
+let STATUSES = [...BASE_STATUSES];
+
+let CONFIG_ASSIGNED     = ['JMEG','JJDD','JRBP','RC'];
+let CONFIG_PROVIDERS    = ['Maxicare','iCare','Intellicare','Philcare','Medicard','ValuCare','Kaizer','OONA','PhilBritish','Pioneer','Bethel','AlliedBankers'];
+let CONFIG_INDUSTRIES   = ['Manufacturing','Healthcare','Education','Retail','Financial Services','Construction','Transportation','Hospitality','Government','Non-profit','Cooperative','Water District'];
+let CONFIG_BIZ_TYPES    = ['SME 5-99','Semi Large Private Company 100-499','Large Private Company 500 - 999','Jumbo Private Company 1000+','Cooperatives','Water Districts'];
+let CONFIG_INS_TYPES    = ['HMO','Life','Non-Life'];
+let CONFIG_CONTACT_TYPES= ['Call/Text','Email','Visit/Meeting','Presentation'];
+
+let CFG = {
+  sheetId:'', apiKey:'', clientId:'',
+  clientsSheet:'Client', quotesSheet:'Quotations',
+  coaSheet:'COA', providersSheet:'ProviderEmails',
+  clientSummarySheet:'ClientSummary', coaHistorySheet:'COAHistory',
+  deletedSheet:'Deleted', configSheet:'Config', passcode:''
+};
+let AUTH = { token:null, user:null, name:'', signedIn:false };
+let CLIENTS=[], QUOTATIONS=[], COA_DATA=[], PROVIDERS=[], CLIENT_HISTORY=[], COA_HISTORY=[];
+
+let _gapiClientReady=false, _gsiReady=false, _tokenClient=null, _pendingWrite=null;
+
+// ── CFG ──
+function loadCFG(){
+  try{ const s=localStorage.getItem('strata_cfg2'); if(s) CFG={...CFG,...JSON.parse(s)}; }catch(e){}
+}
+
+// ── STATUS LIST ──
+function refreshStatuses(){
+  const merged=[...BASE_STATUSES];
+  CLIENTS.map(c=>c.status).filter(Boolean).forEach(s=>{ if(!merged.includes(s)) merged.push(s); });
+  STATUSES=merged;
+}
+
+// ── AUTH ──
+function parseJwt(t){ try{ return JSON.parse(atob(t.split('.')[1])); }catch(e){ return{}; } }
+
+function handleGoogleSignIn(resp){
+  const p=parseJwt(resp.credential);
+  AUTH={token:resp.credential,user:p.email,name:p.name,signedIn:true};
+  localStorage.setItem('strata_auth',JSON.stringify({name:AUTH.name,user:AUTH.user}));
+  launchApp();
+}
+
+function manualSignIn(){
+  const name=document.getElementById('manual-name').value.trim();
+  const code=document.getElementById('manual-code').value.trim();
+  const err=document.getElementById('login-error');
+  if(!name){ err.textContent='Please enter your name.'; return; }
+  if(!CFG.passcode){
+    err.style.color='var(--accent2)'; err.textContent='No passcode set — configure via desktop Settings.';
+    AUTH={token:null,user:'manual',name,signedIn:true};
+    localStorage.setItem('strata_auth',JSON.stringify({name,user:'manual'}));
+    launchApp(); return;
+  }
+  if(code!==CFG.passcode){ err.textContent='Incorrect passcode.'; return; }
+  AUTH={token:null,user:'manual',name,signedIn:true};
+  localStorage.setItem('strata_auth',JSON.stringify({name,user:'manual'}));
+  launchApp();
+}
+
+function signOut(){
+  AUTH={token:null,user:null,name:'',signedIn:false};
+  localStorage.removeItem('strata_auth');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('manual-name').value='';
+  document.getElementById('manual-code').value='';
+  document.getElementById('login-error').textContent='';
+}
+
+function launchApp(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  loadLocalData();
+  renderDashboard();
+  if(CFG.apiKey) syncAll();
+}
+
+function checkSession(){
+  loadCFG();
+  try{
+    const s=JSON.parse(localStorage.getItem('strata_auth'));
+    if(s&&s.name){ AUTH={token:null,user:s.user||'manual',name:s.name,signedIn:true}; launchApp(); return; }
+  }catch(e){}
+}
+
+// ── SHEETS API ──
+async function fetchSheet(sheetName){
+  if(!CFG.sheetId||!CFG.apiKey) throw new Error('No API key or Sheet ID. Configure via desktop Settings.');
+  const r=encodeURIComponent(`${sheetName}!A1:Z5000`);
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${CFG.sheetId}/values/${r}?key=${CFG.apiKey}`;
+  const res=await fetch(url);
+  if(!res.ok){ const e=await res.json(); throw new Error(e.error?.message||res.statusText); }
+  return (await res.json()).values||[];
+}
+
+async function appendToSheet(sheetName,row){
+  if(!CFG.sheetId) throw new Error('No Sheet ID configured.');
+  if(!window.gapi||!gapi.client) throw new Error('OAuth not initialized.');
+  const token=gapi.client.getToken?gapi.client.getToken():null;
+  if(!token||!token.access_token) throw new Error('NO_TOKEN');
+  return await gapi.client.sheets.spreadsheets.values.append({
+    spreadsheetId:CFG.sheetId, range:`${sheetName}!A1`,
+    valueInputOption:'USER_ENTERED', insertDataOption:'INSERT_ROWS',
+    resource:{values:[row]}
+  });
+}
+
+async function updateSheetRow(sheetName,rowIndex,row){
+  if(!CFG.sheetId) throw new Error('No Sheet ID configured.');
+  if(!window.gapi||!gapi.client) throw new Error('OAuth not initialized.');
+  await gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId:CFG.sheetId, range:`${sheetName}!A${rowIndex}`,
+    valueInputOption:'USER_ENTERED', resource:{values:[row]}
+  });
+}
+
+async function deleteSheetRow(sheetName,rowIndex){
+  if(!CFG.sheetId) throw new Error('No Sheet ID configured.');
+  if(!window.gapi||!gapi.client) throw new Error('OAuth not initialized.');
+  const resp=await gapi.client.sheets.spreadsheets.get({spreadsheetId:CFG.sheetId,fields:'sheets.properties'});
+  const sheet=resp.result.sheets.find(s=>s.properties.title===sheetName);
+  if(!sheet) throw new Error(`Sheet "${sheetName}" not found.`);
+  const gid=sheet.properties.sheetId;
+  await gapi.client.sheets.spreadsheets.batchUpdate({
+    spreadsheetId:CFG.sheetId,
+    resource:{requests:[{deleteDimension:{range:{sheetId:gid,dimension:'ROWS',startIndex:rowIndex-1,endIndex:rowIndex}}}]}
+  });
+}
+
+// ── GAPI / GSI ──
+function gsiLoaded(){ _gsiReady=true; maybeInitTokenClient(); }
+function gapiLoaded(){
+  gapi.load('client',async()=>{
+    try{
+      await gapi.client.init({apiKey:CFG.apiKey||'',discoveryDocs:['https://sheets.googleapis.com/$discovery/rest?version=v4']});
+      _gapiClientReady=true; maybeInitTokenClient();
+    }catch(e){ console.error('gapi.client.init error:',e); }
+  });
+}
+function maybeInitTokenClient(){
+  if(window.google&&window.google.accounts&&window.google.accounts.oauth2) _gsiReady=true;
+  if(window.gapi&&window.gapi.client) _gapiClientReady=true;
+  if(!_gapiClientReady||!_gsiReady||!CFG.clientId||_tokenClient) return;
+  try{
+    _tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:CFG.clientId,
+      scope:'https://www.googleapis.com/auth/spreadsheets',
+      callback:(resp)=>{
+        if(resp.error){ toast('OAuth error: '+resp.error,'error'); return; }
+        gapi.client.setToken(resp);
+        toast('Write access granted ✓','success'); setSyncStatus('live');
+        if(_pendingWrite){ _pendingWrite(); _pendingWrite=null; }
+      }
+    });
+  }catch(e){ console.error('initTokenClient error:',e); }
+}
+function requestWriteAccess(pendingFn){
+  maybeInitTokenClient();
+  if(!_gapiClientReady){ toast('Google API not ready. Check connection.','error'); return false; }
+  if(!_gsiReady){ toast('Google Sign-In not ready.','error'); return false; }
+  if(!_tokenClient){ toast('OAuth init failed. Verify Client ID via desktop Settings.','error'); return false; }
+  if(pendingFn) _pendingWrite=pendingFn;
+  const hasToken=gapi.client.getToken&&gapi.client.getToken();
+  _tokenClient.requestAccessToken({prompt:hasToken?'':'consent'});
+  return true;
+}
+
+// ── SYNC ──
+async function syncAll(){
+  if(!CFG.apiKey){ toast('No API key — configure via desktop Settings first.','error'); return; }
+  const btns=document.querySelectorAll('#sync-btn,#sync-btn-empty');
+  btns.forEach(b=>{ b.disabled=true; b.textContent='↻ Syncing…'; });
+  setSyncStatus('syncing');
+  try{
+    const [c,q,coa,p,ch,coah,cfg]=await Promise.all([
+      fetchSheet(CFG.clientsSheet), fetchSheet(CFG.quotesSheet),
+      fetchSheet(CFG.coaSheet), fetchSheet(CFG.providersSheet),
+      fetchSheet(CFG.clientSummarySheet||'ClientSummary'),
+      fetchSheet(CFG.coaHistorySheet||'COAHistory'),
+      CFG.configSheet?fetchSheet(CFG.configSheet).catch(()=>[]):Promise.resolve([]),
+    ]);
+    if(cfg.length) parseConfig(cfg);
+    const fresh=parseClients(c);
+    const localMap={};
+    CLIENTS.forEach(lc=>{ if(lc.id) localMap[lc.id]=lc; });
+    CLIENTS=fresh.map(fc=>{ const l=localMap[fc.id]; if(l&&!fc.docs&&l.docs) fc.docs=l.docs; return fc; });
+    QUOTATIONS=parseQuotes(q); COA_DATA=parseCOA(coa); PROVIDERS=parseProviders(p);
+    try{ CLIENT_HISTORY=parseClientHistory(ch); }catch(e){ CLIENT_HISTORY=[]; }
+    try{ COA_HISTORY=parseCOAHistory(coah); }catch(e){ COA_HISTORY=[]; }
+    saveLocalData(); refreshStatuses(); setSyncStatus('live');
+    toast(`Synced: ${CLIENTS.length} clients, ${COA_DATA.length} tasks`,'success');
+    renderCurrentScreen();
+  }catch(e){ setSyncStatus('error'); toast('Sync failed: '+e.message,'error'); }
+  btns.forEach(b=>{ b.disabled=false; b.textContent='↻ Sync from Google Sheets'; });
+}
+
+// ── PARSERS (exact match to desktop) ──
+function r2o(h,r){ const o={}; h.forEach((k,i)=>o[k]=r[i]||''); return o; }
+function fdi(s){ if(!s)return''; if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s; const d=new Date(s); if(isNaN(d))return''; return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+function parseClients(rows){
+  if(rows.length<2)return[];
+  const h=rows[0];
+  const docsHdr=h.find(hdr=>['client documentation','client docs','documentation','google drive link','drive link','client doc','docs'].includes(String(hdr||'').trim().toLowerCase()));
+  const docsIdx=docsHdr?h.indexOf(docsHdr):-1;
+  return rows.slice(1).filter(r=>r[0]&&r[1]).map(r=>{
+    const o=r2o(h,r);
+    let contacts=[];
+    try{ if(o['Contacts']) contacts=JSON.parse(o['Contacts']); }catch(e){}
+    if(!contacts.length&&(o['Contact Person']||o['Mobile No.']||o['Email'])){
+      contacts=[{name:o['Contact Person']||'',designation:o['Designation/Position']||'',email:o['Email']||'',mobile:o['Mobile No.']||''}];
+    }
+    return{ id:o['Client ID'],name:o['Client Name'],address:o['Address']||'',
+      contact:o['Contact Person'],designation:o['Designation/Position']||'',mobile:o['Mobile No.'],email:o['Email'],
+      industry:o['Industry']||'',bizType:o['Business Type'],insType:o['Type of Insurance'],
+      currentProvider:o['Current Provider'],renewal:fdi(o['Renewal Date']),provider:o['Provider'],
+      status:o['Status'],contactType:o['Contact Type'],lastContact:fdi(o['Last Contact Date']),
+      nextFollowUp:fdi(o['Next Follow-up Date']),assigned:o['Assigned'],notes:o['Notes'],
+      docs:(docsIdx>=0?String(r[docsIdx]||''):''),contacts,_row:rows.indexOf(r)+1 };
+  });
+}
+function parseQuotes(rows){
+  if(rows.length<2)return[];
+  const h=rows[0];
+  return rows.slice(1).filter(r=>r[0]).map(r=>{
+    const o=r2o(h,r);
+    return{id:o['Quote ID'],clientId:o['Client ID'],client:o['Client Name'],provider:o['Provider'],
+      franchiseDate:fdi(o['Franchise Date']),franchiseEnd:fdi(o['Franchise Ending Date']),
+      initialEmail:fdi(o['Initial Email Sent']),tat:fdi(o['Turnaround Time']),
+      status:o['Status'],dateReleased:fdi(o['Date Released']),rates:o['Rates'],
+      torSob:o['TOR & SOB (Y/N)'],requests:o['Requests'],threadId:o['Email Thread ID'],
+      followUp:fdi(o['Follow-up Date']),_row:rows.indexOf(r)+1};
+  });
+}
+function parseCOA(rows){
+  if(rows.length<2)return[];
+  const h=rows[0];
+  return rows.slice(1).filter(r=>r[0]&&r[4]).map(r=>{
+    const o=r2o(h,r);
+    return{date:fdi(o['Activity Date']),clientId:o['Client ID'],client:o['Client Name'],
+      contactType:o['Contact Type'],task:o['Task'],assigned:o['Assigned'],
+      completed:fdi(o['Date Completed']),_row:rows.indexOf(r)+1};
+  });
+}
+function parseClientHistory(rows){
+  if(rows.length<2)return[];
+  const h=rows[0];
+  return rows.slice(1).filter(r=>r[0]&&r[1]).map(r=>{
+    const o=r2o(h,r);
+    return{timestamp:o['Activity Timestamp']||o['Timestamp']||'',clientId:o['Client ID']||'',
+      client:o['Client Name']||'',contact:o['Contact Person']||'',mobile:o['Mobile No.']||'',
+      email:o['Email']||'',bizType:o['Business Type']||'',insType:o['Type of Insurance']||'',
+      currentProvider:o['Current Provider']||'',renewal:fdi(o['Renewal Date']),
+      provider:o['Provider']||'',status:o['Status']||'',contactType:o['Contact Type']||'',
+      lastContact:fdi(o['Last Contact Date']),nextFollowUp:fdi(o['Next Follow-up Date']),
+      assigned:o['Assigned']||'',notes:o['Notes']||'',summary:o['Client Summary']||'',editedBy:o['Edited By']||''};
+  }).reverse();
+}
+function parseCOAHistory(rows){
+  if(rows.length<2)return[];
+  const h=rows[0];
+  return rows.slice(1).filter(r=>r[0]).map(r=>{
+    const o=r2o(h,r);
+    return{timestamp:o['Timestamp']||'',activityDate:fdi(o['Activity Date']),
+      clientId:o['Client ID']||'',client:o['Client Name']||'',contactType:o['Contact Type']||'',
+      task:o['Task']||'',assigned:o['Assigned']||'',processed:o['Processed']||'',sequence:o['Sequence']||''};
+  }).reverse();
+}
+function parseProviders(rows){
+  if(rows.length<2)return[];
+  const h=rows[0];
+  return rows.slice(1).filter(r=>r[0]).map(r=>{
+    const o=r2o(h,r);
+    return{provider:o['Provider'],email:o['Email'],honorifics:o['Honorifics'],contact:o['Contact Person'],cc:o['CC'],_row:rows.indexOf(r)+1};
+  });
+}
+function parseConfig(rows){
+  if(rows.length<2)return;
+  const h=rows[0];
+  const ti=h.findIndex(v=>String(v||'').trim().toLowerCase()==='type');
+  const vi=h.findIndex(v=>String(v||'').trim().toLowerCase()==='value');
+  if(ti<0||vi<0)return;
+  const g={};
+  rows.slice(1).forEach(r=>{
+    const t=String(r[ti]||'').trim(), v=String(r[vi]||'').trim();
+    if(!t||!v)return; if(!g[t])g[t]=[]; if(!g[t].includes(v))g[t].push(v);
+  });
+  if(g['Industry']?.length)    CONFIG_INDUSTRIES    = g['Industry'];
+  if(g['BizType']?.length)     CONFIG_BIZ_TYPES     = g['BizType'];
+  if(g['InsType']?.length)     CONFIG_INS_TYPES     = g['InsType'];
+  if(g['ContactType']?.length) CONFIG_CONTACT_TYPES = g['ContactType'];
+  if(g['Assigned']?.length)    CONFIG_ASSIGNED      = g['Assigned'];
+  if(g['Provider']?.length)    CONFIG_PROVIDERS     = g['Provider'];
+}
+
+// ── LOCAL CACHE ──
+function saveLocalData(){ try{localStorage.setItem('strata_data2',JSON.stringify({CLIENTS,QUOTATIONS,COA_DATA,PROVIDERS,CLIENT_HISTORY,COA_HISTORY}));}catch(e){} }
+function loadLocalData(){
+  try{
+    const d=JSON.parse(localStorage.getItem('strata_data2'));
+    if(d&&d.CLIENTS){
+      CLIENTS=d.CLIENTS; QUOTATIONS=d.QUOTATIONS; COA_DATA=d.COA_DATA;
+      PROVIDERS=d.PROVIDERS||[]; CLIENT_HISTORY=d.CLIENT_HISTORY||[]; COA_HISTORY=d.COA_HISTORY||[];
+      refreshStatuses(); return true;
+    }
+  }catch(e){}
+  CLIENTS=[];QUOTATIONS=[];COA_DATA=[];PROVIDERS=[];CLIENT_HISTORY=[];COA_HISTORY=[];
+  refreshStatuses(); return false;
+}
+
+// ── HELPERS ──
+function pd(s){ if(!s)return null; const d=new Date(s); return isNaN(d)?null:d; }
+function dd(d){ if(!d)return null; return Math.floor((d-TODAY)/86400000); }
+function fmt(d){ if(!d)return'—'; const dt=typeof d==='string'?new Date(d):d; if(!dt||isNaN(dt))return'—'; return dt.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}); }
+function urg(days){ if(days===null)return{label:'No date',cls:'badge-gray',cat:'none',color:'#a8a89e'}; if(days<0)return{label:'Expired',cls:'badge-red',cat:'expired',color:'#c0392b'}; if(days<=14)return{label:'Critical',cls:'badge-red',cat:'critical',color:'#e74c3c'}; if(days<=30)return{label:'Soon',cls:'badge-amber',cat:'soon',color:'#b35c00'}; if(days<=90)return{label:'Upcoming',cls:'badge-blue',cat:'upcoming',color:'#1a4f7a'}; return{label:'Future',cls:'badge-green',cat:'future',color:'#1e5c35'}; }
+function stBadge(s){ const m={'Newly Contacted':'badge-gray','Negotiation':'badge-blue','For Quotation':'badge-amber','For Presentation':'badge-purple','Closing':'badge-teal','Closed Won':'badge-green','Closed Lost':'badge-red','Revisit':'badge-purple'}; return`<span class="badge ${m[s]||'badge-gray'}">${s||'—'}</span>`; }
+function ctBadge(t){ const m={'Call/Text':'badge-teal','Email':'badge-gray','Visit/Meeting':'badge-amber','Presentation':'badge-purple'}; return`<span class="badge ${m[t]||'badge-gray'}">${t||'—'}</span>`; }
+
+// ── TOAST ──
+function toast(msg,type=''){
+  const w=document.getElementById('toast-wrap');
+  const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:''); el.textContent=msg;
+  w.appendChild(el); setTimeout(()=>el.remove(),3500);
+}
+
+// ── SYNC STATUS ──
+function setSyncStatus(state){
+  const p=document.getElementById('sync-pill');
+  p.className=state;
+  p.textContent={live:'● live',error:'✗ error',syncing:'↻ syncing'}[state]||'—';
+}
+
+// ── NAVIGATION ──
+let _navStack=[], _currentTab='dashboard';
+const ROOT_TABS=['dashboard','clients','coa','renewals'];
+const TAB_TITLES={dashboard:'Dashboard',clients:'Clients',coa:'COA Tasks',renewals:'Renewals'};
+
+function showScreen(id,title){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const screen=document.getElementById('screen-'+id);
+  if(screen) screen.classList.add('active');
+  document.getElementById('hdr-title').textContent=title;
+  const isRoot=ROOT_TABS.includes(id);
+  document.getElementById('back-btn').classList.toggle('visible',!isRoot);
+  document.getElementById('tab-bar').classList.toggle('hidden',!isRoot);
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(isRoot){ const btn=document.querySelector(`.tab-btn[data-tab="${id}"]`); if(btn) btn.classList.add('active'); }
+}
+
+function navigate(id,title){
+  const cur=document.querySelector('.screen.active')?.id.replace('screen-','');
+  const curTitle=document.getElementById('hdr-title').textContent;
+  _navStack.push({screenId:cur,title:curTitle});
+  showScreen(id,title);
+}
+
+function goBack(){
+  if(!_navStack.length) return;
+  const prev=_navStack.pop();
+  showScreen(prev.screenId,prev.title);
+  renderCurrentScreen();
+}
+
+function switchTab(tab){
+  _navStack=[]; _currentTab=tab;
+  showScreen(tab,TAB_TITLES[tab]||tab);
+  renderCurrentScreen();
+}
+
+function renderCurrentScreen(){
+  const active=document.querySelector('.screen.active');
+  if(!active)return;
+  const id=active.id.replace('screen-','');
+  if(id==='dashboard') renderDashboard();
+  else if(id==='clients') renderClients();
+  else if(id==='coa') renderCOA();
+  else if(id==='renewals') renderRenewals();
+}
+
+// ── MORE SHEET ──
+function openMore(){
+  document.getElementById('more-overlay').classList.add('visible');
+  document.getElementById('more-sheet').classList.add('open');
+}
+function closeMore(){
+  document.getElementById('more-overlay').classList.remove('visible');
+  document.getElementById('more-sheet').classList.remove('open');
+}
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  const hasData=CLIENTS.length||QUOTATIONS.length||COA_DATA.length;
+  document.getElementById('dash-empty').style.display=hasData?'none':'block';
+  document.getElementById('dash-data').style.display=hasData?'block':'none';
+  if(!hasData) return;
+
+  const overdue=CLIENTS.filter(c=>c.nextFollowUp&&new Date(c.nextFollowUp)<TODAY&&!CLOSED_STATUSES.includes(c.status));
+  const openCOA=COA_DATA.filter(c=>!c.completed);
+  const critRen=CLIENTS.filter(c=>{ const days=dd(pd(c.renewal)); return days!==null&&days<=14&&!INACTIVE_STATUSES.includes(c.status); });
+  const active=CLIENTS.filter(c=>!CLOSED_STATUSES.includes(c.status));
+
+  document.getElementById('dash-metrics').innerHTML=`
+    <div class="metric-card accent">
+      <div class="metric-label">Total Clients</div>
+      <div class="metric-value">${CLIENTS.length}</div>
+      <div class="metric-delta" style="color:rgba(255,255,255,0.45)">${active.length} active</div>
+    </div>
+    <div class="metric-card" style="border-left:3px solid var(--red)">
+      <div class="metric-label">Overdue</div>
+      <div class="metric-value danger">${overdue.length}</div>
+      <div class="metric-delta">Follow-ups past due</div>
+    </div>
+    <div class="metric-card" style="border-left:3px solid var(--amber)">
+      <div class="metric-label">Renewals</div>
+      <div class="metric-value warn">${critRen.length}</div>
+      <div class="metric-delta">Within 14 days</div>
+    </div>
+    <div class="metric-card" style="border-left:3px solid var(--blue)">
+      <div class="metric-label">Open COA</div>
+      <div class="metric-value info">${openCOA.length}</div>
+      <div class="metric-delta">Pending tasks</div>
+    </div>`;
+
+  const overdSorted=[...overdue].sort((a,b)=>new Date(a.nextFollowUp)-new Date(b.nextFollowUp));
+  document.getElementById('dash-ov-cnt').textContent=overdSorted.length;
+  document.getElementById('dash-ov-list').innerHTML=overdSorted.length
+    ? overdSorted.map(c=>{
+        const daysAgo=Math.abs(dd(new Date(c.nextFollowUp)));
+        return`<div class="list-row">
+          <div class="row-left">
+            <div class="row-name">${esc(c.name)}</div>
+            <div class="row-sub">${stBadge(c.status)} · ${esc(c.assigned||'unassigned')}</div>
+          </div>
+          <div class="row-meta">
+            <div class="row-date">${fmt(c.nextFollowUp)}</div>
+            <div class="row-ago">${daysAgo}d overdue</div>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div class="list-empty">No overdue follow-ups ✓</div>`;
+
+  const coaSorted=[...openCOA].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  document.getElementById('dash-coa-cnt').textContent=coaSorted.length;
+  document.getElementById('dash-coa-list').innerHTML=coaSorted.length
+    ? coaSorted.map(c=>`<div class="list-row">
+        <div class="row-left">
+          <div class="row-name">${esc(c.task)}</div>
+          <div class="row-sub">${esc(c.client||'Non-client')} · ${esc(c.assigned||'unassigned')}</div>
+        </div>
+        <div class="row-meta">${ctBadge(c.contactType)}</div>
+      </div>`).join('')
+    : `<div class="list-empty">No open COA tasks ✓</div>`;
+}
+
+// ── RENEWALS ──
+let _renFilter=''; // '' = all, or urgency cat: expired/critical/soon/upcoming/future
+function renderRenewals(){
+  const q=(document.getElementById('ren-search')?.value||'').toLowerCase();
+
+  // Build all rows with urgency computed
+  const allRows=CLIENTS
+    .filter(c=>!INACTIVE_STATUSES.includes(c.status))
+    .map(c=>{ const d=pd(c.renewal); const days=dd(d); return{...c,dateObj:d,days,u:urg(days)}; })
+    .sort((a,b)=>{
+      if(a.days===null&&b.days===null) return 0;
+      if(a.days===null) return 1; if(b.days===null) return -1;
+      return a.days-b.days;
+    });
+
+  // Metric counts
+  const expired  = allRows.filter(r=>r.u.cat==='expired').length;
+  const critical = allRows.filter(r=>r.u.cat==='critical').length;
+  const soon     = allRows.filter(r=>r.u.cat==='soon').length;
+  const upcoming = allRows.filter(r=>r.u.cat==='upcoming').length;
+  const future   = allRows.filter(r=>r.u.cat==='future').length;
+  const noDate   = allRows.filter(r=>r.u.cat==='none').length;
+
+  // Urgency chips
+  const chips=[
+    {cat:'expired', label:'Expired', sub:'Past date', count:expired, cls:'expired'},
+    {cat:'critical', label:'Critical', sub:'≤14 days', count:critical, cls:'critical'},
+    {cat:'soon', label:'Soon', sub:'15–30 days', count:soon, cls:'soon'},
+    {cat:'upcoming', label:'Upcoming', sub:'31–90 days', count:upcoming, cls:'upcoming'},
+  ];
+  document.getElementById('ren-chips').innerHTML=chips.map(ch=>`
+    <button class="urg-chip ${ch.cls}${_renFilter===ch.cat?' active':''}" onclick="setRenFilter('${ch.cat}')">
+      <div class="urg-chip-count">${ch.count}</div>
+      <div class="urg-chip-label">${ch.label}</div>
+      <div class="urg-chip-sub">${ch.sub}</div>
+    </button>`).join('');
+
+  // Filter + search
+  let list=allRows;
+  if(_renFilter) list=list.filter(r=>r.u.cat===_renFilter);
+  if(q) list=list.filter(r=>(r.name||'').toLowerCase().includes(q)||(r.assigned||'').toLowerCase().includes(q)||(r.currentProvider||'').toLowerCase().includes(q));
+
+  const cont=document.getElementById('ren-list'); if(!cont) return;
+  if(!list.length){
+    cont.innerHTML=`<div class="empty-st"><div class="empty-icon">⏰</div><div class="empty-title">No renewals found</div><div class="empty-sub">${_renFilter?'No clients in this urgency band.':'All active clients have no renewal date set.'}</div></div>`;
+    return;
+  }
+
+  // Group by urgency when no filter
+  if(!_renFilter&&!q){
+    const groups=[
+      {cat:'expired', label:'🔴 Expired', rows:list.filter(r=>r.u.cat==='expired')},
+      {cat:'critical', label:'🔴 Critical (≤14 days)', rows:list.filter(r=>r.u.cat==='critical')},
+      {cat:'soon', label:'🟠 Soon (15–30 days)', rows:list.filter(r=>r.u.cat==='soon')},
+      {cat:'upcoming', label:'🔵 Upcoming (31–90 days)', rows:list.filter(r=>r.u.cat==='upcoming')},
+      {cat:'future', label:'⬜ Future (91+ days)', rows:list.filter(r=>r.u.cat==='future')},
+      {cat:'none', label:'— No renewal date', rows:list.filter(r=>r.u.cat==='none')},
+    ].filter(g=>g.rows.length);
+    cont.innerHTML=groups.map(g=>`
+      <div class="ren-group-label" style="color:${g.rows[0].u.color}">${g.label}</div>
+      ${g.rows.map(r=>renCardHtml(r)).join('')}`).join('');
+  } else {
+    cont.innerHTML=list.map(r=>renCardHtml(r)).join('');
+  }
+  cont.innerHTML+=`<div class="cc-count">${list.length} client${list.length!==1?'s':''}</div>`;
+}
+
+function renCardHtml(r){
+  const realIdx=CLIENTS.indexOf(r);
+  const daysLabel=r.days===null?'—':r.days<0?`${Math.abs(r.days)}d expired`:r.days===0?'today':`${r.days}d left`;
+  const borderColor=r.u.color;
+  return`<div class="ren-card" style="border-left-color:${borderColor}" onclick="openClientDetail(${realIdx})">
+    <div class="ren-card-top">
+      <div class="ren-card-name">${esc(r.name)}</div>
+      <div class="ren-days" style="color:${borderColor}">${esc(daysLabel)}</div>
+    </div>
+    <div class="ren-card-meta">
+      <span class="ren-meta-item"><span class="ren-meta-lbl">Renewal</span>${fmt(r.dateObj)||'—'}</span>
+      <span class="ren-meta-item"><span class="ren-meta-lbl">Provider</span>${esc(r.currentProvider||'—')}</span>
+      <span class="ren-meta-item"><span class="ren-meta-lbl">Type</span>${esc(r.insType||'—')}</span>
+      <span class="ren-meta-item">${stBadge(r.status)}</span>
+      <span class="ren-meta-item"><span class="ren-meta-lbl">Assigned</span>${esc(r.assigned||'—')}</span>
+    </div>
+  </div>`;
+}
+
+function setRenFilter(cat){
+  _renFilter=_renFilter===cat?'':cat; // toggle off if same
+  renderRenewals();
+}
+
+// ── HELPER ──
+function toLocalDateStr(d){ const yr=d.getFullYear(),mo=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0'); return`${yr}-${mo}-${dy}`; }
+
+// ── HDR SAVE DISPATCHER ──
+function hdrSave(){
+  const id=document.querySelector('.screen.active')?.id.replace('screen-','');
+  if(id==='client-edit') saveClientM();
+  else if(id==='coa-complete') completeCOATaskM();
+  else if(id==='coa-edit') saveCOATaskM();
+  else if(id==='quote-edit') saveQuotationM();
+  else if(id==='provider-edit') saveProviderM();
+}
+
+// ── QUOTATIONS ──
+let _quoteFilter='pending';
+function nextQuoteID(){ const ids=QUOTATIONS.map(q=>parseInt((q.id||'').replace('Q-',''))||0); return`Q-${String(Math.max(0,...ids)+1).padStart(4,'0')}`; }
+function qBadge(s){ const m={'Released':'badge-green','Within TAT':'badge-teal','For Follow-Up':'badge-amber','Overdue':'badge-red','No Email Sent':'badge-gray','Franchise Expired':'badge-red'}; const k=Object.keys(m).find(k=>s&&s.includes(k)); return`<span class="badge ${k?m[k]:'badge-gray'}">${s||'—'}</span>`; }
+
+function openQuotations(){
+  navigate('quotations','Quotations');
+  setHdrMode('quotations');
+  renderQuotations();
+}
+
+function setQuoteFilter(f){
+  _quoteFilter=f;
+  document.querySelectorAll('#screen-quotations .filter-chip').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('qt-fc-'+f); if(btn) btn.classList.add('active');
+  renderQuotations();
+}
+
+function renderQuotations(){
+  const q=(document.getElementById('qt-search')?.value||'').toLowerCase();
+  const isReleased=_quoteFilter==='released';
+  let list=QUOTATIONS.filter(qt=>{
+    if(isReleased&&qt.status!=='Released') return false;
+    if(!isReleased&&qt.status==='Released') return false;
+    if(q&&!(qt.client||'').toLowerCase().includes(q)&&!(qt.provider||'').toLowerCase().includes(q)&&!(qt.id||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const cont=document.getElementById('qt-list'); if(!cont) return;
+  if(!list.length){
+    cont.innerHTML=`<div class="empty-st"><div class="empty-icon">◻</div><div class="empty-title">No quotations</div><div class="empty-sub">${isReleased?'No released quotations.':'No pending quotations.'}</div></div>`;
+    return;
+  }
+  cont.innerHTML=list.map(qt=>{
+    const realIdx=QUOTATIONS.indexOf(qt);
+    const fuDays=qt.followUp?dd(new Date(qt.followUp)):null;
+    const fuCls=(fuDays!==null&&fuDays<0)?'overdue':'';
+    return`<div class="quote-card${isReleased?' released':''}" onclick="openQuoteDetail(${realIdx})">
+      <div class="quote-card-top">
+        <div>
+          <div class="quote-id">${esc(qt.id||'—')}</div>
+          <div class="quote-client">${esc(qt.client||'—')}</div>
+        </div>
+        ${qBadge(qt.status)}
+      </div>
+      <div class="quote-rows">
+        <div class="quote-row"><span class="quote-lbl">Provider</span><span class="quote-val">${esc(qt.provider||'—')}</span></div>
+        <div class="quote-row"><span class="quote-lbl">Franchise</span><span class="quote-val">${fmt(qt.franchiseDate)||'—'}${qt.franchiseEnd?` → ${fmt(qt.franchiseEnd)}`:''}</span></div>
+        <div class="quote-row"><span class="quote-lbl">Init. Email</span><span class="quote-val">${fmt(qt.initialEmail)||'—'}${qt.tat?` · TAT: ${fmt(qt.tat)}`:''}</span></div>
+        <div class="quote-row"><span class="quote-lbl">Follow-up</span><span class="quote-val ${fuCls}">${fmt(qt.followUp)||'—'}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  cont.innerHTML+=`<div class="cc-count">${list.length} quotation${list.length!==1?'s':''}</div>`;
+}
+
+// ── QUOTE DETAIL ──
+let _viewQuoteIdx=null;
+function openQuoteDetail(idx){
+  _viewQuoteIdx=idx;
+  const q=QUOTATIONS[idx];
+  navigate('quote-detail', q.id||'Quotation');
+  setHdrMode('detail'); // reuse Edit button → opens quote edit
+
+  // Override edit button onclick dynamically
+  const editBtn=document.getElementById('hdr-edit-btn');
+  if(editBtn) editBtn.setAttribute('onclick','openQuoteEdit('+idx+')');
+
+  const fuDays=q.followUp?dd(new Date(q.followUp)):null;
+  const fuStyle=(fuDays!==null&&fuDays<0)?'style="color:var(--red);font-weight:600"':'';
+
+  document.getElementById('quote-detail-content').innerHTML=`
+    <div style="margin-bottom:10px">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);margin-bottom:4px">${esc(q.id||'—')}</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:6px">${esc(q.client||'—')}</div>
+      ${qBadge(q.status)}
+    </div>
+    <div class="detail-section" style="margin-top:12px">
+      <div class="detail-row"><span class="detail-label">Client ID</span><span class="detail-val" style="font-family:'DM Mono',monospace;font-size:12px">${esc(q.clientId||'—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Provider</span><span class="detail-val">${esc(q.provider||'—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Rates</span><span class="detail-val">${esc(q.rates||'—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Franchise Date</span><span class="detail-val">${fmt(q.franchiseDate)||'—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Franchise End</span><span class="detail-val">${fmt(q.franchiseEnd)||'—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Initial Email</span><span class="detail-val">${fmt(q.initialEmail)||'—'}</span></div>
+      <div class="detail-row"><span class="detail-label">TAT Date</span><span class="detail-val">${fmt(q.tat)||'—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Date Released</span><span class="detail-val">${fmt(q.dateReleased)||'—'}</span></div>
+      <div class="detail-row"><span class="detail-label">TOR &amp; SOB</span><span class="detail-val">${esc(q.torSob||'—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Follow-up</span><span class="detail-val" ${fuStyle}>${fmt(q.followUp)||'—'}</span></div>
+    </div>
+    ${q.requests?`<div class="detail-section" style="margin-top:10px"><div class="detail-section-title">Special Requests</div><div class="detail-notes">${esc(q.requests)}</div></div>`:''}
+    <div style="height:8px"></div>`;
+}
+
+// ── QUOTE ADD / EDIT ──
+let _editQuoteIdx=null;
+function openQuoteEdit(idx){
+  _editQuoteIdx=idx;
+  const q=idx!==null?QUOTATIONS[idx]:{};
+  navigate('quote-edit', idx!==null?'Edit Quotation':'New Quotation');
+  setHdrMode('quote-edit');
+
+  // Client dropdown
+  const sel=document.getElementById('qe-clientid');
+  sel.innerHTML=`<option value="">— No client —</option>`+CLIENTS.map(c=>`<option value="${esc(c.id)}" ${c.id===q.clientId?'selected':''}>${esc(c.id)} — ${esc(c.name)}</option>`).join('');
+  sel.value=q.clientId||'';
+  qeClientChanged();
+
+  // Provider dropdown
+  document.getElementById('qe-provider').innerHTML=`<option value="">Select…</option>`+CONFIG_PROVIDERS.map(v=>`<option value="${esc(v)}" ${v===q.provider?'selected':''}>${esc(v)}</option>`).join('');
+
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
+  set('qe-rates',q.rates); set('qe-fdate',q.franchiseDate); set('qe-fend',q.franchiseEnd);
+  set('qe-email',q.initialEmail); set('qe-released',q.dateReleased);
+  set('qe-tor',q.torSob); set('qe-followup',q.followUp); set('qe-requests',q.requests);
+  document.getElementById('quote-edit-error').textContent='';
+  document.getElementById('qe-delete-zone').style.display=idx!==null?'block':'none';
+}
+
+function qeClientChanged(){
+  const sel=document.getElementById('qe-clientid');
+  const nameRow=document.getElementById('qe-client-name-row');
+  const nameInput=document.getElementById('qe-client');
+  const matched=CLIENTS.find(c=>c.id===sel.value);
+  if(matched){ nameInput.value=matched.name; nameRow.style.display='block'; }
+  else { nameInput.value=''; nameRow.style.display='none'; }
+}
+
+async function saveQuotationM(){
+  const clientName=document.getElementById('qe-client').value.trim()||document.getElementById('qe-clientid').value;
+  const errEl=document.getElementById('quote-edit-error');
+  if(!clientName&&!document.getElementById('qe-clientid').value){ errEl.textContent='Select a client.'; return; }
+  errEl.textContent='';
+  document.getElementById('hdr-save-btn').disabled=true;
+
+  const isNew=_editQuoteIdx===null;
+  const clientId=document.getElementById('qe-clientid').value;
+  const matched=CLIENTS.find(c=>c.id===clientId);
+  const client=matched?matched.name:(clientName||clientId);
+
+  // Auto-compute status (same logic as desktop)
+  const iemail=pd(document.getElementById('qe-email').value);
+  const fend=pd(document.getElementById('qe-fend').value);
+  const released=document.getElementById('qe-released').value;
+  let status='';
+  if(released) status='Released';
+  else if(fend&&dd(fend)<0) status='Franchise Expired';
+  else if(!iemail) status='No Email Sent';
+  else { const net=Math.floor((TODAY-iemail)/86400000); status=net<=7?'Within TAT':net<=10?'For Follow-Up':'Overdue'; }
+  let tat='';
+  if(iemail){ const t=new Date(iemail); t.setDate(t.getDate()+7); tat=toLocalDateStr(t); }
+
+  const rec={
+    id:isNew?nextQuoteID():QUOTATIONS[_editQuoteIdx].id,
+    clientId, client, provider:document.getElementById('qe-provider').value,
+    franchiseDate:document.getElementById('qe-fdate').value,
+    franchiseEnd:document.getElementById('qe-fend').value,
+    initialEmail:document.getElementById('qe-email').value,
+    tat, status, dateReleased:released,
+    rates:document.getElementById('qe-rates').value,
+    torSob:document.getElementById('qe-tor').value,
+    requests:document.getElementById('qe-requests').value,
+    threadId:'', followUp:document.getElementById('qe-followup').value,
+    _row:isNew?null:QUOTATIONS[_editQuoteIdx]._row,
+  };
+
+  if(isNew){ QUOTATIONS.push(rec); }else{ QUOTATIONS[_editQuoteIdx]=rec; }
+  saveLocalData();
+  document.getElementById('hdr-save-btn').disabled=false;
+  toast(isNew?'Quotation added ✓':'Quotation saved ✓','success');
+
+  writeBack(CFG.quotesSheet,rec,quoteToRow,_editQuoteIdx,QUOTATIONS,isNew);
+
+  // Go back to detail (edit) or list (new)
+  _navStack.pop();
+  if(!isNew){
+    showScreen('quote-detail',rec.id);
+    setHdrMode('detail');
+    document.getElementById('hdr-edit-btn').setAttribute('onclick','openQuoteEdit('+_editQuoteIdx+')');
+    openQuoteDetail(_editQuoteIdx);
+  } else {
+    showScreen('quotations','Quotations');
+    setHdrMode('quotations');
+    renderQuotations();
+  }
+}
+
+// ── QUOTE DELETE ──
+function showQuoteDeleteSheetM(){
+  const idx=_editQuoteIdx; if(idx===null) return;
+  _pendingDeleteType='quotation'; _pendingDeleteIdx=idx;
+  const q=QUOTATIONS[idx];
+  document.getElementById('del-desc').innerHTML=`<div style="padding:8px 20px 14px;font-size:14px;color:var(--text2)"><span class="del-name">${esc(q.id||'—')}</span> — ${esc(q.client||'—')}</div>`;
+  document.getElementById('del-passcode').value='';
+  document.getElementById('del-error').textContent='';
+  document.getElementById('del-confirm-btn').disabled=false;
+  document.getElementById('del-confirm-btn').textContent='Delete Quotation';
+  document.getElementById('del-overlay').classList.add('visible');
+  document.getElementById('del-sheet').classList.add('open');
+}
+
+// ── COA FILTER ──
+let _coaFilter='open';
+function setCOAFilter(f){
+  _coaFilter=f;
+  document.querySelectorAll('#screen-coa .filter-chip').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('coa-fc-'+f); if(btn) btn.classList.add('active');
+  renderCOA();
+}
+
+// ── COA LIST ──
+function renderCOA(){
+  const q=(document.getElementById('coa-search')?.value||'').toLowerCase();
+  let list=[...COA_DATA];
+  if(_coaFilter==='open') list=list.filter(c=>!c.completed);
+  if(_coaFilter==='done') list=list.filter(c=>!!c.completed);
+  if(q) list=list.filter(c=>(c.task||'').toLowerCase().includes(q)||(c.client||'').toLowerCase().includes(q)||(c.assigned||'').toLowerCase().includes(q));
+  list.sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  const cont=document.getElementById('coa-list'); if(!cont) return;
+  if(!list.length){
+    cont.innerHTML=`<div class="empty-st"><div class="empty-icon">◷</div><div class="empty-title">No tasks</div><div class="empty-sub">${_coaFilter==='open'?'All tasks completed. ✓':'No completed tasks yet.'}</div></div>`;
+    return;
+  }
+  cont.innerHTML=list.map(c=>{
+    const realIdx=COA_DATA.indexOf(c);
+    const isDone=!!c.completed;
+    const quickBtn=isDone
+      ?`<span class="coa-done-label">✓ ${fmt(c.completed)}</span>`
+      :`<button class="coa-quick-btn" title="Quick complete" onclick="event.stopPropagation();quickCompleteCOA(${realIdx})">✓</button>`;
+    return`<div class="coa-card${isDone?' coa-done':''}" onclick="${isDone?'':'openCOAComplete('+realIdx+')'}">
+      <div class="coa-card-top">
+        <div class="coa-task-text">${esc(c.task)}</div>
+        ${quickBtn}
+      </div>
+      <div class="coa-card-meta">
+        <span class="coa-meta-item">${esc(c.client||'Non-client')}</span>
+        ${c.contactType?ctBadge(c.contactType):''}
+        <span class="coa-meta-item"><span class="coa-meta-label">Date</span>${fmt(c.date)}</span>
+        ${c.assigned?`<span class="coa-meta-item"><span class="coa-meta-label">Assigned</span>${esc(c.assigned)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  cont.innerHTML+=`<div class="cc-count">${list.length} task${list.length!==1?'s':''}</div>`;
+}
+
+// ── COA COMPLETE SCREEN ──
+let _completeCOAIdx=null;
+function openCOAComplete(idx){
+  _completeCOAIdx=idx;
+  const t=COA_DATA[idx];
+  navigate('coa-complete','Complete Task');
+  setHdrMode('coa-complete');
+
+  // Task info card
+  document.getElementById('coa-task-info').innerHTML=`
+    <div class="task-info-task" style="margin-bottom:10px">${esc(t.task)}</div>
+    ${t.client?`<div class="task-info-row"><span class="task-info-label">Client</span><span class="task-info-val">${esc(t.client)}</span></div>`:''}
+    <div class="task-info-row"><span class="task-info-label">Contact Type</span><span class="task-info-val">${t.contactType?ctBadge(t.contactType):'—'}</span></div>
+    <div class="task-info-row"><span class="task-info-label">Activity Date</span><span class="task-info-val">${fmt(t.date)}</span></div>
+    <div class="task-info-row"><span class="task-info-label">Assigned</span><span class="task-info-val">${esc(t.assigned||'—')}</span></div>`;
+
+  // Completion date default = today
+  document.getElementById('cc-date').value=toLocalDateStr(new Date());
+  document.getElementById('cc-notes').value='';
+  document.getElementById('coa-complete-error').textContent='';
+
+  // Status dropdown + client fields
+  const hasClient=!!t.clientId;
+  document.getElementById('cc-client-fields').style.display=hasClient?'block':'none';
+  if(hasClient){
+    const clientIdx=CLIENTS.findIndex(c=>c.id===t.clientId);
+    const currentStatus=clientIdx>-1?CLIENTS[clientIdx].status:'—';
+    const sel=document.getElementById('cc-status');
+    sel.innerHTML=`<option value="">Keep current status: ${esc(currentStatus)}</option>`
+      +(clientIdx>-1?STATUSES.map(s=>`<option value="${esc(s)}"${s===currentStatus?' selected':''}>${esc(s)}</option>`).join(''):'');
+    document.getElementById('cc-followup').value='';
+  }
+  // Info box
+  const clientIdx2=t.clientId?CLIENTS.findIndex(c=>c.id===t.clientId):-1;
+  document.getElementById('cc-save-info').innerHTML=
+    `On save:<br>✓ COA task marked complete in COA sheet<br>✓ Logged to COA History`
+    +(clientIdx2>-1?'<br>✓ Client last contact updated<br>✓ Client status updated (if changed)<br>✓ Snapshot logged to Client History':'<br>— No client linked to this task');
+}
+
+async function completeCOATaskM(){
+  const idx=_completeCOAIdx;
+  const task=COA_DATA[idx];
+  const completedDate=document.getElementById('cc-date').value;
+  const errEl=document.getElementById('coa-complete-error');
+  if(!completedDate){ errEl.textContent='Completion date required.'; return; }
+  errEl.textContent='';
+
+  const notes=document.getElementById('cc-notes').value.trim();
+  const newStatus=task.clientId?(document.getElementById('cc-status').value):'';
+  const newFollowUp=task.clientId?(document.getElementById('cc-followup').value):'';
+
+  document.getElementById('hdr-save-btn').disabled=true;
+  toast('Completing task…','saving');
+
+  // 1. Mark complete
+  task.completed=completedDate;
+
+  // 2. Update linked client
+  const clientIdx=task.clientId?CLIENTS.findIndex(c=>c.id===task.clientId):-1;
+  if(clientIdx>-1){
+    const client=CLIENTS[clientIdx];
+    if(task.contactType) client.contactType=task.contactType;
+    if(task.assigned) client.assigned=task.assigned;
+    client.lastContact=completedDate;
+    if(newStatus) client.status=newStatus;
+    if(newFollowUp) client.nextFollowUp=newFollowUp;
+    if(notes) client.notes=notes;
+    await writeBack(CFG.clientsSheet,client,clientToRow,clientIdx,CLIENTS,false);
+    const csTs=new Date().toLocaleString('en-PH');
+    const histNote=notes?`[COA completed] ${task.task} — ${notes}`:`[COA completed] ${task.task}`;
+    await appendHistoryWithRetry(
+      CFG.clientSummarySheet||'ClientSummary',
+      [csTs,client.id,client.name,client.address||'',client.contact,client.designation||'',client.mobile,
+       client.email,client.industry||'',client.bizType,client.insType,client.currentProvider,
+       client.renewal,client.provider,client.status,client.contactType,
+       client.lastContact,client.nextFollowUp,client.assigned,histNote,client.docs||'',AUTH.name||''],
+      'ClientSummary'
+    );
+    CLIENT_HISTORY.unshift({timestamp:csTs,clientId:client.id,client:client.name,contact:client.contact,
+      status:client.status,contactType:client.contactType,lastContact:client.lastContact,
+      nextFollowUp:client.nextFollowUp,assigned:client.assigned,notes:histNote,editedBy:AUTH.name||''});
+  }
+
+  // 3. Save completed COA row
+  await writeBack(CFG.coaSheet,task,coaToRow,idx,COA_DATA,false);
+
+  // 4. Append to COAHistory
+  const coaTs=new Date().toLocaleString('en-PH');
+  const coaSeq=(COA_HISTORY.length||0)+1;
+  await appendHistoryWithRetry(
+    CFG.coaHistorySheet||'MTaskHistory',
+    [coaTs,task.date,task.clientId||'',task.client||'',task.contactType||'',task.task||'',task.assigned||'','YES',coaSeq],
+    'MTaskHistory'
+  );
+  COA_HISTORY.unshift({timestamp:coaTs,activityDate:task.date,clientId:task.clientId,
+    client:task.client,contactType:task.contactType,task:task.task,assigned:task.assigned,processed:'YES',sequence:coaSeq});
+
+  saveLocalData();
+  document.getElementById('hdr-save-btn').disabled=false;
+  toast(`Task completed ✓${task.clientId?' — Client updated':''}`, 'success');
+
+  // Go back to COA list
+  _navStack=[];
+  showScreen('coa','COA Tasks');
+  setHdrMode('coa');
+  renderCOA(); renderDashboard();
+}
+
+// ── QUICK COMPLETE (no notes, just date prompt) ──
+async function quickCompleteCOA(idx){
+  const task=COA_DATA[idx];
+  if(!task||task.completed) return;
+  // Navigate to complete screen for consistency (no skip)
+  openCOAComplete(idx);
+}
+
+// ── COA ADD / EDIT ──
+let _editCOAIdx=null;
+function openCOAEdit(idx){
+  _editCOAIdx=idx;
+  const t=idx!==null?COA_DATA[idx]:{};
+  navigate('coa-edit', idx!==null?'Edit Task':'New Task');
+  setHdrMode('coa-edit');
+
+  // Client dropdown — matches desktop modal
+  const sel=document.getElementById('ce-clientid');
+  sel.innerHTML=`<option value="">— Non-client task —</option>`
+    +CLIENTS.map(c=>`<option value="${esc(c.id)}" ${c.id===t.clientId?'selected':''}>${esc(c.id)} — ${esc(c.name)}</option>`).join('');
+  sel.value=t.clientId||'';
+  ceClientChanged(); // populate name field
+
+  document.getElementById('ce-date').value=t.date||toLocalDateStr(new Date());
+  document.getElementById('ce-task').value=t.task||'';
+  document.getElementById('ce-completed').value=t.completed||'';
+  document.getElementById('coa-edit-error').textContent='';
+
+  const ctSel=document.getElementById('ce-contacttype');
+  ctSel.innerHTML=`<option value="">Select…</option>`+CONFIG_CONTACT_TYPES.map(v=>`<option value="${esc(v)}" ${v===t.contactType?'selected':''}>${esc(v)}</option>`).join('');
+  buildChips('ce-assigned',CONFIG_ASSIGNED,t.assigned,true);
+  document.getElementById('ce-delete-zone').style.display=idx!==null?'block':'none';
+}
+
+function ceClientChanged(){
+  const sel=document.getElementById('ce-clientid');
+  const nameRow=document.getElementById('ce-client-name-row');
+  const nameInput=document.getElementById('ce-client');
+  const matched=CLIENTS.find(c=>c.id===sel.value);
+  if(matched){ nameInput.value=matched.name; nameRow.style.display='block'; }
+  else { nameInput.value=''; nameRow.style.display='none'; }
+}
+
+async function saveCOATaskM(){
+  const myIdx=_editCOAIdx;
+  const date=document.getElementById('ce-date').value;
+  const task=document.getElementById('ce-task').value.trim();
+  const errEl=document.getElementById('coa-edit-error');
+  if(!date){ errEl.textContent='Activity date required.'; return; }
+  if(!task){ errEl.textContent='Task description required.'; return; }
+  errEl.textContent='';
+  document.getElementById('hdr-save-btn').disabled=true;
+
+  const clientId=document.getElementById('ce-clientid').value;
+  const matched=CLIENTS.find(c=>c.id===clientId);
+  const clientName=matched?matched.name:'';
+  const isNew=myIdx===null;
+  const rec={
+    date, clientId, client:clientName,
+    contactType:document.getElementById('ce-contacttype').value,
+    task, assigned:getChipValues('ce-assigned'),
+    completed:document.getElementById('ce-completed').value||'',
+    _row:isNew?null:COA_DATA[myIdx]._row,
+  };
+
+  if(isNew){ COA_DATA.push(rec); }else{ COA_DATA[myIdx]=rec; }
+  saveLocalData();
+  document.getElementById('hdr-save-btn').disabled=false;
+  toast(isNew?'Task added ✓':'Task saved ✓','success');
+
+  writeBack(CFG.coaSheet,rec,coaToRow,myIdx,COA_DATA,isNew);
+
+  _navStack=[];
+  showScreen('coa','COA Tasks');
+  setHdrMode('coa');
+  renderCOA(); renderDashboard();
+}
+
+// ── COA DELETE ──
+function showCOADeleteSheetM(){
+  const idx=_editCOAIdx; if(idx===null) return;
+  _pendingDeleteType='coa'; _pendingDeleteIdx=idx;
+  const t=COA_DATA[idx];
+  document.getElementById('del-desc').innerHTML=`<div style="padding:8px 20px 14px;font-size:14px;color:var(--text2)"><span class="del-name">${esc((t.task||'').substring(0,60))}</span>${t.client?`<br><span style="font-size:12px;color:var(--text3)">${esc(t.client)}</span>`:''}</div>`;
+  document.getElementById('del-passcode').value='';
+  document.getElementById('del-error').textContent='';
+  document.getElementById('del-confirm-btn').disabled=false;
+  document.getElementById('del-confirm-btn').textContent='Delete Task';
+  document.getElementById('del-overlay').classList.add('visible');
+  document.getElementById('del-sheet').classList.add('open');
+}
+// COA delete uses same confirmDeleteM() but navigates back to COA list
+const _origConfirmDelete=confirmDeleteM;
+confirmDeleteM=async function(){
+  const type=_pendingDeleteType;
+  const code=document.getElementById('del-passcode').value.trim();
+  const errEl=document.getElementById('del-error');
+  if(!code){ errEl.textContent='Enter passcode to confirm.'; return; }
+  if(code!==CFG.passcode){ errEl.textContent='Incorrect passcode.'; return; }
+  errEl.textContent='';
+  const btn=document.getElementById('del-confirm-btn');
+  btn.disabled=true; btn.textContent='Deleting…';
+  try{
+    await deleteRecordM(type,_pendingDeleteIdx);
+    closeDeleteSheet();
+    toast('Deleted ✓','success');
+    _navStack=[];
+    if(type==='coa'){ showScreen('coa','COA Tasks'); setHdrMode('coa'); renderCOA(); }
+    else if(type==='quotation'){ showScreen('quotations','Quotations'); setHdrMode('quotations'); renderQuotations(); }
+    else if(type==='provider'){ showScreen('providers','Providers'); setHdrMode('providers'); renderProviders(); }
+    else { showScreen('clients','Clients'); setHdrMode('clients'); renderClients(); }
+    renderDashboard();
+  }catch(e){ errEl.textContent='Error: '+e.message; btn.disabled=false; btn.textContent='Delete Permanently'; }
+};
+
+// ── WRITE QUEUE (debounce, identical to desktop) ──
+const WRITE_DELAY=400;
+const _writeTimers={}, _writeQueue={};
+function scheduleWrite(key,fn){
+  if(_writeTimers[key]) clearTimeout(_writeTimers[key]);
+  _writeQueue[key]=fn;
+  _writeTimers[key]=setTimeout(async()=>{
+    const p=_writeQueue[key]; delete _writeQueue[key]; delete _writeTimers[key];
+    if(p) await p();
+  },WRITE_DELAY);
+}
+async function writeBack(sheet,rec,rowFn,idx,collection,isNew){
+  const key=sheet+':'+(isNew?'new':(rec._row||idx));
+  scheduleWrite(key,async()=>{
+    setSyncStatus('saving');
+    const token=(window.gapi&&gapi.client&&gapi.client.getToken)?gapi.client.getToken():null;
+    if(!token||!token.access_token){
+      setSyncStatus('error');
+      requestWriteAccess(()=>writeBack(sheet,rec,rowFn,idx,collection,isNew));
+      return;
+    }
+    try{
+      const row=rowFn(rec);
+      if(isNew){
+        const resp=await appendToSheet(sheet,row);
+        if(resp&&resp.result&&resp.result.updates&&resp.result.updates.updatedRange){
+          const m=resp.result.updates.updatedRange.match(/A(\d+)/);
+          if(m){ rec._row=parseInt(m[1]); const ri=collection.indexOf(rec); if(ri!==-1) collection[ri]._row=rec._row; saveLocalData(); }
+        }
+      } else { await updateSheetRow(sheet,(rec._row||(idx+2)),row); }
+      setSyncStatus('live'); toast('Saved to Google Sheets ✓','success');
+    }catch(e){
+      setSyncStatus('error');
+      if(e.status===401||e.status===403){ gapi.client.setToken(null); requestWriteAccess(()=>writeBack(sheet,rec,rowFn,idx,collection,isNew)); }
+      else { toast('Saved locally. Sheets error: '+e.message,'error'); }
+    }
+  });
+}
+async function appendHistoryWithRetry(sheetName,row,label){
+  try{ await appendToSheet(sheetName,row); }
+  catch(e){
+    if(e.message==='NO_TOKEN'||e.status===401||e.status===403){
+      await new Promise(resolve=>{
+        requestWriteAccess(async()=>{ try{ await appendToSheet(sheetName,row); }catch(e2){ toast('Could not save '+label+' history: '+e2.message,'error'); } resolve(); });
+      });
+    } else { toast('Could not save '+label+' history: '+e.message,'error'); }
+  }
+}
+async function fetchNextClientID(){
+  try{
+    const range=encodeURIComponent(`${CFG.clientsSheet}!A1:A5000`);
+    const url=`https://sheets.googleapis.com/v4/spreadsheets/${CFG.sheetId}/values/${range}?key=${CFG.apiKey}`;
+    const res=await fetch(url); if(!res.ok) throw new Error('fetch failed');
+    const vals=((await res.json()).values||[]).flat().slice(1);
+    let max=0; vals.forEach(v=>{const m=String(v||'').match(/^C-(\d+)$/i);if(m){const n=parseInt(m[1],10);if(n>max)max=n;}});
+    return `C-${String(max+1).padStart(4,'0')}`;
+  }catch(e){ return nextClientID(); }
+}
+function nextClientID(){ const ids=CLIENTS.map(c=>parseInt((c.id||'').replace('C-',''))||0); return`C-${String(Math.max(0,...ids)+1).padStart(4,'0')}`; }
+
+// ── ROW SERIALIZERS (column order must match sheet exactly) ──
+function clientToRow(c){
+  const pc=(c.contacts&&c.contacts.length)?c.contacts[0]:{};
+  return[c.id,c.name,c.address||'',c.contact||(pc.name||''),c.designation||(pc.designation||''),
+    c.mobile||(pc.mobile||''),c.email||(pc.email||''),c.industry||'',c.bizType,c.insType,
+    c.currentProvider,c.renewal,c.provider,c.status,c.contactType,c.lastContact,c.nextFollowUp,
+    c.assigned,c.notes,c.docs,(c.contacts&&c.contacts.length)?JSON.stringify(c.contacts):''];
+}
+
+// ── buildHistoryChangeNote (identical to desktop) ──
+function buildHistoryChangeNote(oldRec,rec,isNew){
+  if(isNew){ const p=['[New client added]']; if(rec.notes) p.push(rec.notes); return p.join('\n'); }
+  const labels=[];
+  const chk=(label,o,n)=>{ const ov=(o||'').trim(),nv=(n||'').trim(); if(ov!==nv) labels.push(`[${label}: ${ov||'—'} → ${nv||'—'}]`); };
+  chk('Address',oldRec.address,rec.address); chk('Contact Person',oldRec.contact,rec.contact);
+  chk('Designation',oldRec.designation,rec.designation); chk('Mobile No.',oldRec.mobile,rec.mobile);
+  chk('Email',oldRec.email,rec.email); chk('Industry',oldRec.industry,rec.industry);
+  chk('Business Type',oldRec.bizType,rec.bizType); chk('Insurance Type',oldRec.insType,rec.insType);
+  chk('Current Provider',oldRec.currentProvider,rec.currentProvider); chk('Renewal Date',oldRec.renewal,rec.renewal);
+  chk('Target Provider',oldRec.provider,rec.provider); chk('Status',oldRec.status,rec.status);
+  chk('Contact Type',oldRec.contactType,rec.contactType); chk('Last Contact',oldRec.lastContact,rec.lastContact);
+  chk('Next Follow-up',oldRec.nextFollowUp,rec.nextFollowUp); chk('Assigned',oldRec.assigned,rec.assigned);
+  chk('Documentation',oldRec.docs,rec.docs);
+  const notesChanged=(oldRec.notes||'').trim()!==(rec.notes||'').trim();
+  const parts=[]; if(labels.length) parts.push(labels.join('\n'));
+  if(notesChanged&&rec.notes) parts.push(rec.notes); if(notesChanged&&!rec.notes) parts.push('[Notes cleared]');
+  return parts.join('\n')||'[Updated]';
+}
+
+// ── MULTI-CONTACT (mobile cards) ──
+function renderContactsM(contacts){
+  const wrap=document.getElementById('ef-contacts-wrap'); if(!wrap)return;
+  const rows=(contacts&&contacts.length)?contacts:[{name:'',designation:'',email:'',mobile:''}];
+  wrap.innerHTML=rows.map((r,i)=>contactCardHtml(r,i)).join('');
+}
+function contactCardHtml(r,i){
+  const label=i===0?'Contact 1 (Primary)':'Contact '+(i+1);
+  const removeBtn=i>0?`<button type="button" class="remove-contact-btn" onclick="removeContactM(${i})">×</button>`:'';
+  const v=s=>(s||'').replace(/"/g,'&quot;');
+  return`<div class="contact-card" id="ef-cc-${i}">
+    <div class="contact-card-hd"><span class="contact-card-num">${label}</span>${removeBtn}</div>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" type="text" placeholder="Full name" autocapitalize="words" value="${v(r.name)}"></div>
+    <div class="form-group"><label class="form-label">Designation</label><input class="form-input" type="text" placeholder="Title or position" value="${v(r.designation)}"></div>
+    <div class="form-group"><label class="form-label">Mobile</label><input class="form-input" type="tel" placeholder="+63 9XX XXX XXXX" value="${v(r.mobile)}"></div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" placeholder="email@company.com" value="${v(r.email)}"></div>
+  </div>`;
+}
+function addContactM(){
+  const wrap=document.getElementById('ef-contacts-wrap'); if(!wrap)return;
+  const i=wrap.children.length;
+  wrap.insertAdjacentHTML('beforeend',contactCardHtml({name:'',designation:'',mobile:'',email:''},i));
+  wrap.lastElementChild.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function removeContactM(i){
+  const card=document.getElementById('ef-cc-'+i); if(card) card.remove();
+  // Re-index remaining cards
+  const wrap=document.getElementById('ef-contacts-wrap'); if(!wrap)return;
+  [...wrap.children].forEach((card,idx)=>{
+    card.id='ef-cc-'+idx;
+    const lbl=card.querySelector('.contact-card-num');
+    if(lbl) lbl.textContent=idx===0?'Contact 1 (Primary)':'Contact '+(idx+1);
+    const btn=card.querySelector('.remove-contact-btn');
+    if(btn) btn.setAttribute('onclick','removeContactM('+idx+')');
+    else if(idx>0){
+      const hd=card.querySelector('.contact-card-hd');
+      if(hd) hd.insertAdjacentHTML('beforeend',`<button type="button" class="remove-contact-btn" onclick="removeContactM(${idx})">×</button>`);
+    }
+  });
+}
+function getContactsM(){
+  const wrap=document.getElementById('ef-contacts-wrap'); if(!wrap)return[];
+  return [...wrap.children].map(card=>{
+    const inputs=card.querySelectorAll('input');
+    return{name:(inputs[0]?.value||'').trim(),designation:(inputs[1]?.value||'').trim(),mobile:(inputs[2]?.value||'').trim(),email:(inputs[3]?.value||'').trim()};
+  }).filter(r=>r.name||r.email||r.mobile);
+}
+
+// ── CHIP TOGGLES ──
+function buildChips(containerId,options,selected,multi=true){
+  const selVals=(selected||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const el=document.getElementById(containerId); if(!el) return;
+  el.innerHTML=options.map(opt=>`<button type="button" class="chip-opt ${selVals.includes(opt)?'active':''}" data-val="${esc(opt)}" onclick="toggleChip(this,'${containerId}',${multi})">${esc(opt)}</button>`).join('');
+}
+function toggleChip(btn,containerId,multi){
+  if(!multi){ document.querySelectorAll(`#${containerId} .chip-opt`).forEach(b=>b.classList.remove('active')); }
+  btn.classList.toggle('active');
+}
+function getChipValues(containerId){
+  return Array.from(document.querySelectorAll(`#${containerId} .chip-opt.active`)).map(b=>b.dataset.val).join(', ');
+}
+
+// ── HEADER STATE ──
+function setHdrMode(mode){
+  document.getElementById('sync-pill').style.display         = ['default','clients','coa','quotations','providers'].includes(mode)?'':'none';
+  document.getElementById('hdr-add-btn').style.display       = mode==='clients'    ?'':'none';
+  document.getElementById('hdr-coa-add-btn').style.display   = mode==='coa'        ?'':'none';
+  document.getElementById('hdr-quote-add-btn').style.display = mode==='quotations' ?'':'none';
+  document.getElementById('hdr-prov-add-btn').style.display  = mode==='providers'  ?'':'none';
+  document.getElementById('hdr-edit-btn').style.display      = mode==='detail'     ?'':'none';
+  document.getElementById('hdr-save-btn').style.display      = ['edit','coa-complete','coa-edit','quote-edit','provider-edit'].includes(mode)?'':'none';
+}
+
+// ── CLIENT FILTER STATE ──
+let _clientFilter='active';
+function setClientFilter(f){
+  _clientFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('fc-'+f); if(btn) btn.classList.add('active');
+  renderClients();
+}
+
+// ── CLIENTS LIST ──
+function renderClients(){
+  const q=(document.getElementById('clients-search')?.value||'').toLowerCase();
+  let list=[...CLIENTS];
+
+  if(_clientFilter==='active')  list=list.filter(c=>!INACTIVE_STATUSES.includes(c.status));
+  if(_clientFilter==='closed')  list=list.filter(c=>CLOSED_STATUSES.includes(c.status));
+  if(_clientFilter==='revisit') list=list.filter(c=>c.status==='Revisit');
+  // 'all' = no filter
+
+  if(q) list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.assigned||'').toLowerCase().includes(q)||(c.status||'').toLowerCase().includes(q)||(c.provider||'').toLowerCase().includes(q)||(c.notes||'').toLowerCase().includes(q));
+
+  // Sort: overdue first, then by nextFollowUp ascending
+  list.sort((a,b)=>{
+    const aOver=a.nextFollowUp&&new Date(a.nextFollowUp)<TODAY;
+    const bOver=b.nextFollowUp&&new Date(b.nextFollowUp)<TODAY;
+    if(aOver&&!bOver) return -1; if(!aOver&&bOver) return 1;
+    const ad=a.nextFollowUp?new Date(a.nextFollowUp):new Date('9999');
+    const bd=b.nextFollowUp?new Date(b.nextFollowUp):new Date('9999');
+    return ad-bd;
+  });
+
+  const cont=document.getElementById('clients-list'); if(!cont) return;
+  if(!list.length){ cont.innerHTML=`<div class="empty-st"><div class="empty-icon">◎</div><div class="empty-title">No clients found</div><div class="empty-sub">Try a different filter or search term.</div></div>`; return; }
+
+  cont.innerHTML=list.map(c=>{
+    const realIdx=CLIENTS.indexOf(c);
+    const followDays=c.nextFollowUp?dd(new Date(c.nextFollowUp)):null;
+    const renDays=dd(pd(c.renewal));
+    let borderCls='';
+    if(followDays!==null&&followDays<0&&!CLOSED_STATUSES.includes(c.status)) borderCls='cc-red';
+    else if(renDays!==null&&renDays<=30&&!INACTIVE_STATUSES.includes(c.status)) borderCls='cc-amber';
+    else if(c.status==='Closing') borderCls='cc-green';
+
+    const followStr=c.nextFollowUp?fmt(c.nextFollowUp):'—';
+    const followCls=(followDays!==null&&followDays<0)?'overdue':(followDays!==null&&followDays<=3)?'warn':'';
+    const renStr=c.renewal?fmt(c.renewal):'—';
+    const renCls=(renDays!==null&&renDays<=14&&!INACTIVE_STATUSES.includes(c.status))?'warn':(renDays!==null&&renDays<0)?'overdue':'';
+    const notesStr=c.notes?(c.notes.length>60?c.notes.substring(0,57)+'…':c.notes):'';
+
+    return`<div class="client-card ${borderCls}" onclick="openClientDetail(${realIdx})">
+      <div class="cc-top">
+        <div class="cc-name">${esc(c.name)}</div>
+        ${stBadge(c.status)}
+      </div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-lbl">Renewal</span><span class="cc-rval ${renCls}">${esc(renStr)}</span></div>
+        <div class="cc-row"><span class="cc-lbl">Last Contact</span><span class="cc-rval">${fmt(c.lastContact)||'—'}</span></div>
+        <div class="cc-row"><span class="cc-lbl">Next F/Up</span><span class="cc-rval ${followCls}">${esc(followStr)}${followDays!==null&&followDays<0?` (${Math.abs(followDays)}d overdue)`:''}</span></div>
+        ${notesStr?`<div class="cc-row"><span class="cc-lbl">Notes</span><span class="cc-rval notes">${esc(notesStr)}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  if(list.length) cont.innerHTML+=`<div class="cc-count">${list.length} client${list.length!==1?'s':''}</div>`;
+}
+
+// ── CLIENT DETAIL TABS ──
+let _viewClientIdx=null;
+let _detailTab='overview';
+
+function setDetailTab(tab){
+  _detailTab=tab;
+  ['overview','edit','history'].forEach(t=>{
+    document.getElementById('dt-tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('dt-'+t).style.display=t===tab?'block':'none';
+  });
+  if(tab==='history') renderDetailHistory(_viewClientIdx);
+  setHdrMode('detail'); // always show Edit button, not Save
+}
+
+function openClientDetail(idx){
+  _viewClientIdx=idx;
+  _detailTab='overview';
+  const c=CLIENTS[idx];
+  navigate('client-detail', c.name);
+  setHdrMode('detail');
+
+  // Reset to overview tab
+  ['overview','edit','history'].forEach(t=>{
+    document.getElementById('dt-tab-'+t).classList.toggle('active',t==='overview');
+    document.getElementById('dt-'+t).style.display=t==='overview'?'block':'none';
+  });
+
+  // ── OVERVIEW TAB (matches desktop drawer) ──
+  const d=pd(c.renewal); const days=dd(d); const u=urg(days);
+  const overdDays=c.nextFollowUp?Math.round((TODAY-new Date(c.nextFollowUp))/86400000):null;
+  const allContacts=(c.contacts&&c.contacts.length)?c.contacts:[{name:c.contact||'',designation:c.designation||'',mobile:c.mobile||'',email:c.email||''}];
+  const contactsHtml=allContacts.filter(ct=>ct.name||ct.mobile||ct.email).map((ct,i)=>`
+    <div class="detail-section" style="margin-top:10px">
+      <div class="detail-section-title">${i===0?'Primary Contact':'Contact '+(i+1)}</div>
+      <div class="detail-row"><span class="detail-label">Name</span><span class="detail-val">${esc(ct.name||'—')}${ct.designation?` <span style="color:var(--text3);font-size:11px">· ${esc(ct.designation)}</span>`:''}</span></div>
+      <div class="detail-row"><span class="detail-label">Mobile</span><span class="detail-val">${ct.mobile?`<a href="tel:${esc(ct.mobile)}" style="color:var(--accent2)">${esc(ct.mobile)}</a>`:'—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Email</span><span class="detail-val">${ct.email?`<a href="mailto:${esc(ct.email)}" style="color:var(--accent2);font-size:12px;word-break:break-all">${esc(ct.email)}</a>`:'—'}</span></div>
+    </div>`).join('');
+
+  document.getElementById('dt-overview').innerHTML=`
+    <div style="margin-bottom:4px">
+      <div style="font-size:16px;font-weight:600;margin-bottom:2px">${esc(c.name)}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:6px">${esc(c.id||'')}</div>
+      ${stBadge(c.status)}
+    </div>
+    <div class="detail-section" style="margin-top:12px">
+      <div class="detail-row"><span class="detail-label">Assigned to</span><span class="detail-val">${esc(c.assigned||'—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Next follow-up</span><span class="detail-val${overdDays!==null&&overdDays>0?' overdue':''}" ${overdDays!==null&&overdDays>0?'style="color:var(--red);font-weight:600"':''}>${c.nextFollowUp?fmt(new Date(c.nextFollowUp)):'—'}${overdDays!==null&&overdDays>0?` · ${overdDays}d overdue`:''}</span></div>
+      <div class="detail-row"><span class="detail-label">Last contact</span><span class="detail-val">${c.lastContact?fmt(new Date(c.lastContact)):'—'}</span></div>
+      <div class="detail-row"><span class="detail-label">Curr. provider</span><span class="detail-val">${esc(c.currentProvider||'—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Target provider</span><span class="detail-val">${esc(c.provider||'—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Renewal date</span><span class="detail-val" style="color:${u.color};font-weight:500">${d?fmt(d):'—'}${days!==null?` · ${days<0?Math.abs(days)+'d expired':days+'d left'}`:''}</span></div>
+      <div class="detail-row"><span class="detail-label">Insurance type</span><span class="detail-val">${esc(c.insType||'—')}</span></div>
+      <div class="detail-row"><span class="detail-label">Contact type</span><span class="detail-val">${esc(c.contactType||'—')}</span></div>
+    </div>
+    <div class="detail-section" style="margin-top:10px">
+      <div class="detail-section-title">Notes</div>
+      <div class="detail-notes">${esc(c.notes||'No notes.')}</div>
+      ${c.docs&&c.docs.startsWith('http')?`<div style="margin-top:8px"><a href="${esc(c.docs)}" target="_blank" style="font-size:12px;color:var(--accent2)">View docs ↗</a></div>`:''}
+    </div>
+    ${contactsHtml}
+    <div style="height:8px"></div>`;
+
+  // ── EDIT TAB ──
+  document.getElementById('dt-edit').innerHTML=`
+    <p class="qp-hint">Opens the full client form with every field. Any changes save to the Clients sheet and log to history automatically.</p>
+    <button class="open-edit-btn" onclick="openClientEdit(${idx})">
+      <span>Open full form for ${esc(c.name)}</span><span style="color:var(--text3);font-size:18px">↗</span>
+    </button>`;
+
+  // ── HISTORY TAB (rendered on demand) ──
+  document.getElementById('dt-history').innerHTML=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Loading…</div>`;
+}
+
+function openClientEditFromDetail(){ openClientEdit(_viewClientIdx); }
+
+// ── CLIENT HISTORY (inline in detail tab) ──
+function renderDetailHistory(idx){
+  const c=CLIENTS[idx];
+  const entries=CLIENT_HISTORY.filter(h=>h.clientId===c.id);
+  const cont=document.getElementById('dt-history'); if(!cont) return;
+  if(!entries.length){
+    cont.innerHTML=`<div class="empty-st"><div class="empty-icon">📋</div><div class="empty-title">No history yet</div><div class="empty-sub">History is logged each time the record is saved.</div></div>`;
+    return;
+  }
+  cont.innerHTML=entries.map(h=>{
+    const ts=h.timestamp||'—';
+    return`<div class="history-entry">
+      <div class="history-time">${esc(ts)}${h.editedBy?` · <span>${esc(h.editedBy)}</span>`:''}</div>
+      <div class="history-body">
+        ${stBadge(h.status)}
+        ${h.contactType?`<span class="badge badge-gray" style="margin-left:4px">${esc(h.contactType)}</span>`:''}
+        ${h.notes?`<div class="history-change">${esc(h.notes)}</div>`:''}
+        <div class="history-assigned">Assigned: ${esc(h.assigned||'—')}</div>
+      </div>
+    </div>`;
+  }).join('')+'<div style="height:8px"></div>';
+}
+
+// Keep screen-client-history accessible for back-nav compatibility
+function openClientHistory(idx){ setDetailTab('history'); }
+
+// ── CLIENT EDIT ──
+let _editClientIdx=null;
+function openClientEdit(idx){
+  _editClientIdx=idx;
+  const c=idx!==null?CLIENTS[idx]:{};
+  navigate('client-edit', idx!==null?'Edit Client':'New Client');
+  setHdrMode('edit');
+
+  // Populate status
+  const statusSel=document.getElementById('ef-status');
+  statusSel.innerHTML=STATUSES.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  statusSel.value=c.status||'Newly Contacted';
+
+  // Populate dropdowns
+  const mkOpts=(arr,cur)=>`<option value="">Select…</option>`+arr.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('');
+  document.getElementById('ef-instype').innerHTML=mkOpts(CONFIG_INS_TYPES,c.insType);
+  document.getElementById('ef-industry').innerHTML=mkOpts(CONFIG_INDUSTRIES,c.industry);
+  document.getElementById('ef-biztype').innerHTML=mkOpts(CONFIG_BIZ_TYPES,c.bizType);
+  document.getElementById('ef-contacttype').innerHTML=mkOpts(CONFIG_CONTACT_TYPES,c.contactType);
+
+  // Populate chips
+  buildChips('ef-curprovider',CONFIG_PROVIDERS,c.currentProvider,true);
+  buildChips('ef-provider',CONFIG_PROVIDERS,c.provider,true);
+  buildChips('ef-assigned',CONFIG_ASSIGNED,c.assigned,true);
+
+  // Populate text fields
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
+  set('ef-name',c.name); set('ef-address',c.address);
+  set('ef-renewal',c.renewal); set('ef-lastcontact',c.lastContact);
+  set('ef-followup',c.nextFollowUp); set('ef-notes',c.notes); set('ef-docs',c.docs);
+
+  // Multi-contact
+  const initContacts=(c.contacts&&c.contacts.length)?c.contacts:[{name:c.contact||'',designation:c.designation||'',mobile:c.mobile||'',email:c.email||''}];
+  renderContactsM(initContacts);
+
+  // Show/hide delete
+  document.getElementById('ef-delete-zone').style.display=idx!==null?'block':'none';
+  document.getElementById('client-edit-error').textContent='';
+}
+
+async function saveClientM(){
+  const myIdx=_editClientIdx;
+  const name=document.getElementById('ef-name').value.trim();
+  const errEl=document.getElementById('client-edit-error');
+  if(!name){ errEl.textContent='Client name is required.'; return; }
+  errEl.textContent='';
+  document.getElementById('hdr-save-btn').disabled=true;
+
+  const isNew=myIdx===null;
+  const oldRec=!isNew?{...CLIENTS[myIdx]}:null;
+  const newId=isNew?await fetchNextClientID():CLIENTS[myIdx].id;
+
+  // Multi-contact
+  const contacts=getContactsM();
+  const primContact=contacts.length?contacts[0]:{name:'',designation:'',mobile:'',email:''};
+
+  const rec={
+    id:newId, name,
+    address:document.getElementById('ef-address').value,
+    contact:primContact.name, designation:primContact.designation,
+    mobile:primContact.mobile, email:primContact.email,
+    industry:document.getElementById('ef-industry').value,
+    bizType:document.getElementById('ef-biztype').value,
+    insType:document.getElementById('ef-instype').value,
+    currentProvider:getChipValues('ef-curprovider'),
+    renewal:document.getElementById('ef-renewal').value,
+    provider:getChipValues('ef-provider'),
+    status:document.getElementById('ef-status').value,
+    contactType:document.getElementById('ef-contacttype').value,
+    assigned:getChipValues('ef-assigned'),
+    lastContact:document.getElementById('ef-lastcontact').value,
+    nextFollowUp:document.getElementById('ef-followup').value,
+    notes:document.getElementById('ef-notes').value,
+    docs:document.getElementById('ef-docs').value,
+    contacts,
+    _row:isNew?null:CLIENTS[myIdx]._row,
+  };
+
+  if(isNew){ CLIENTS.push(rec); }else{ CLIENTS[myIdx]=rec; }
+
+  const meaningfulChange=isNew||!oldRec||[
+    [oldRec.address,rec.address],[oldRec.contact,rec.contact],[oldRec.designation,rec.designation],
+    [oldRec.mobile,rec.mobile],[oldRec.email,rec.email],[oldRec.industry,rec.industry],
+    [oldRec.bizType,rec.bizType],[oldRec.insType,rec.insType],[oldRec.currentProvider,rec.currentProvider],
+    [oldRec.renewal,rec.renewal],[oldRec.provider,rec.provider],[oldRec.status,rec.status],
+    [oldRec.contactType,rec.contactType],[oldRec.lastContact,rec.lastContact],
+    [oldRec.nextFollowUp,rec.nextFollowUp],[oldRec.assigned,rec.assigned],
+    [oldRec.notes,rec.notes],[oldRec.docs,rec.docs],
+  ].some(([o,n])=>(o||'').trim()!==(n||'').trim());
+
+  const changeNote=meaningfulChange?buildHistoryChangeNote(oldRec,rec,isNew):'';
+  if(meaningfulChange){
+    CLIENT_HISTORY.unshift({timestamp:new Date().toLocaleString('en-PH'),clientId:rec.id,client:rec.name,
+      contact:rec.contact,status:rec.status,contactType:rec.contactType,lastContact:rec.lastContact,
+      nextFollowUp:rec.nextFollowUp,assigned:rec.assigned,notes:changeNote,editedBy:AUTH.name||''});
+  }
+
+  saveLocalData();
+  document.getElementById('hdr-save-btn').disabled=false;
+  toast(isNew?'Client added ✓':'Client saved ✓','success');
+
+  // Go back to detail (or list if new)
+  _navStack.pop(); // remove edit from stack
+  if(!isNew){
+    _viewClientIdx=myIdx;
+    showScreen('client-detail',rec.name);
+    setHdrMode('detail');
+    openClientDetail(myIdx); // re-render detail
+  } else {
+    _viewClientIdx=CLIENTS.length-1;
+    showScreen('clients','Clients');
+    setHdrMode('default');
+    renderClients();
+  }
+
+  writeBack(CFG.clientsSheet,rec,clientToRow,myIdx,CLIENTS,isNew);
+  if(meaningfulChange){
+    appendHistoryWithRetry(CFG.clientSummarySheet||'ClientSummary',
+      [new Date().toLocaleString('en-PH'),rec.id,rec.name,rec.address||'',rec.contact,rec.designation||'',
+       rec.mobile,rec.email,rec.industry||'',rec.bizType,rec.insType,rec.currentProvider,rec.renewal,
+       rec.provider,rec.status,rec.contactType,rec.lastContact,rec.nextFollowUp,
+       rec.assigned,changeNote,rec.docs||'',AUTH.name||''],'ClientSummary');
+  }
+}
+
+// ── DELETE CLIENT ──
+let _pendingDeleteType=null, _pendingDeleteIdx=null;
+
+function showDeleteSheetM(){
+  const idx=_editClientIdx; if(idx===null) return;
+  _pendingDeleteType='client'; _pendingDeleteIdx=idx;
+  const c=CLIENTS[idx];
+  const quotes=QUOTATIONS.filter(q=>q.clientId===c.id);
+  const tasks=COA_DATA.filter(t=>t.clientId===c.id);
+  let desc=`<span class="del-name">${esc(c.name)}</span>`;
+  if(quotes.length) desc+=`<br><span style="font-size:12px;color:var(--text3)">${quotes.length} quotation(s) will also be deleted</span>`;
+  if(tasks.length) desc+=`<br><span style="font-size:12px;color:var(--text3)">${tasks.length} COA task(s) will also be deleted</span>`;
+  document.getElementById('del-desc').innerHTML=`<div style="padding:8px 20px 14px;font-size:14px;line-height:1.6;color:var(--text2)">${desc}</div>`;
+  document.getElementById('del-passcode').value='';
+  document.getElementById('del-error').textContent='';
+  document.getElementById('del-confirm-btn').disabled=false;
+  document.getElementById('del-confirm-btn').textContent='Delete Permanently';
+  document.getElementById('del-overlay').classList.add('visible');
+  document.getElementById('del-sheet').classList.add('open');
+}
+function closeDeleteSheet(){
+  document.getElementById('del-overlay').classList.remove('visible');
+  document.getElementById('del-sheet').classList.remove('open');
+}
+async function confirmDeleteM(){
+  const code=document.getElementById('del-passcode').value.trim();
+  const errEl=document.getElementById('del-error');
+  if(!code){ errEl.textContent='Enter passcode to confirm.'; return; }
+  if(code!==CFG.passcode){ errEl.textContent='Incorrect passcode.'; return; }
+  errEl.textContent='';
+  const btn=document.getElementById('del-confirm-btn');
+  btn.disabled=true; btn.textContent='Deleting…';
+  try{
+    await deleteRecordM(_pendingDeleteType,_pendingDeleteIdx);
+    closeDeleteSheet();
+    toast('Deleted — moved to Deleted sheet ✓','success');
+    // Navigate back to clients list
+    _navStack=[];
+    showScreen('clients','Clients');
+    setHdrMode('default');
+    renderClients(); renderDashboard();
+  }catch(e){ errEl.textContent='Error: '+e.message; btn.disabled=false; btn.textContent='Delete Permanently'; }
+}
+
+async function deleteRecordM(type,idx){
+  const deletedAt=new Date().toISOString();
+  const deletedSheet=CFG.deletedSheet||'Deleted';
+  const toDelete=[];
+  if(type==='client'){
+    const c=CLIENTS[idx];
+    toDelete.push({sheetName:CFG.clientsSheet,record:c,type:'Client',label:c.name});
+    QUOTATIONS.forEach(q=>{ if(q.clientId===c.id) toDelete.push({sheetName:CFG.quotesSheet,record:q,type:'Quotation',label:q.client}); });
+    COA_DATA.forEach(t=>{ if(t.clientId===c.id) toDelete.push({sheetName:CFG.coaSheet,record:t,type:'COA',label:(t.task||'').substring(0,60)}); });
+  } else if(type==='quotation'){
+    const q=QUOTATIONS[idx];
+    toDelete.push({sheetName:CFG.quotesSheet,record:q,type:'Quotation',label:q.client});
+  } else if(type==='coa'){
+    const t=COA_DATA[idx];
+    toDelete.push({sheetName:CFG.coaSheet,record:t,type:'COA',label:(t.task||'').substring(0,60)});
+  } else if(type==='provider'){
+    const p=PROVIDERS[idx];
+    toDelete.push({sheetName:CFG.providersSheet,record:p,type:'Provider',label:p.provider});
+  }
+  // Archive to Deleted sheet
+  for(const item of toDelete){
+    const id=item.record.id||item.record.provider||(item.record.date+'_'+item.record.client);
+    await appendToSheet(deletedSheet,[item.type,id,item.label,deletedAt,JSON.stringify(item.record)]);
+  }
+  // Delete rows highest-first per sheet
+  const bySheet={};
+  toDelete.forEach(item=>{ if(item.record._row){ if(!bySheet[item.sheetName]) bySheet[item.sheetName]=[]; bySheet[item.sheetName].push(item.record._row); } });
+  for(const [sheet,rows] of Object.entries(bySheet)){
+    for(const rowNum of [...rows].sort((a,b)=>b-a)) await deleteSheetRow(sheet,rowNum);
+  }
+  // Remove from memory
+  if(type==='client'){
+    const cid=CLIENTS[idx].id;
+    CLIENTS.splice(idx,1);
+    const qi=QUOTATIONS.map((q,i)=>q.clientId===cid?i:-1).filter(i=>i!==-1).sort((a,b)=>b-a);
+    qi.forEach(i=>QUOTATIONS.splice(i,1));
+    const ti=COA_DATA.map((t,i)=>t.clientId===cid?i:-1).filter(i=>i!==-1).sort((a,b)=>b-a);
+    ti.forEach(i=>COA_DATA.splice(i,1));
+  } else if(type==='quotation'){ QUOTATIONS.splice(idx,1); }
+  else if(type==='coa'){ COA_DATA.splice(idx,1); }
+  else if(type==='provider'){ PROVIDERS.splice(idx,1); }
+  saveLocalData();
+}
+
+// ── SETTINGS ──
+function openSettings(){
+  navigate('settings','Settings');
+  setHdrMode('default');
+  loadCFGToForm();
+  // Dark mode toggle state
+  const isDark=document.body.classList.contains('dark');
+  const tog=document.getElementById('dark-toggle-m');
+  if(tog) tog.classList.toggle('on',isDark);
+  // Signed in as
+  const nameEl=document.getElementById('m-user-name');
+  if(nameEl) nameEl.textContent=AUTH.name||'—';
+  // Connection pill
+  updateConnPillM();
+}
+
+function loadCFGToForm(){
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
+  set('m-cfg-sheet-id',CFG.sheetId);
+  set('m-cfg-api-key',CFG.apiKey);
+  set('m-cfg-client-id',CFG.clientId);
+  set('m-cfg-passcode',CFG.passcode);
+  set('m-cfg-clients-sheet',CFG.clientsSheet||'Client');
+  set('m-cfg-quotes-sheet',CFG.quotesSheet||'Quotations');
+  set('m-cfg-coa-sheet',CFG.coaSheet||'COA');
+  set('m-cfg-providers-sheet',CFG.providersSheet||'ProviderEmails');
+  set('m-cfg-clientsummary-sheet',CFG.clientSummarySheet||'ClientSummary');
+  set('m-cfg-coahistory-sheet',CFG.coaHistorySheet||'COAHistory');
+  set('m-cfg-deleted-sheet',CFG.deletedSheet||'Deleted');
+}
+
+function updateConnPillM(){
+  const p=document.getElementById('m-conn-pill'); if(!p)return;
+  const ok=!!(CFG.sheetId&&CFG.apiKey);
+  p.className='conn-pill '+(ok?'connected':'not-connected');
+  p.textContent=ok?'connected':'not connected';
+}
+
+function saveConfigM(){
+  CFG.sheetId=document.getElementById('m-cfg-sheet-id').value.trim();
+  CFG.apiKey=document.getElementById('m-cfg-api-key').value.trim();
+  CFG.clientId=document.getElementById('m-cfg-client-id').value.trim();
+  localStorage.setItem('strata_cfg2',JSON.stringify(CFG));
+  const msg=document.getElementById('m-cfg-msg');
+  msg.textContent='✓ Config saved. Tap Sync then Grant Write Access.'; msg.className='settings-msg ok';
+  updateConnPillM();
+  // Re-init token client with new Client ID
+  _tokenClient=null; maybeInitTokenClient();
+}
+
+async function testConnectionM(){
+  const msg=document.getElementById('m-cfg-msg');
+  msg.textContent='Testing…'; msg.className='settings-msg';
+  try {
+    await fetchSheet(CFG.clientsSheet);
+    msg.textContent='✓ Connection successful!'; msg.className='settings-msg ok';
+    updateConnPillM();
+  } catch(e) {
+    msg.textContent='✗ '+e.message; msg.className='settings-msg err';
+  }
+}
+
+function savePasscodeM(){
+  CFG.passcode=document.getElementById('m-cfg-passcode').value.trim();
+  localStorage.setItem('strata_cfg2',JSON.stringify(CFG));
+  const msg=document.getElementById('m-passcode-msg');
+  msg.textContent='✓ Passcode saved.'; msg.className='settings-msg ok';
+  setTimeout(()=>msg.textContent='',3000);
+}
+
+function saveSheetNamesM(){
+  CFG.clientsSheet=document.getElementById('m-cfg-clients-sheet').value.trim()||'Client';
+  CFG.quotesSheet=document.getElementById('m-cfg-quotes-sheet').value.trim()||'Quotations';
+  CFG.coaSheet=document.getElementById('m-cfg-coa-sheet').value.trim()||'COA';
+  CFG.providersSheet=document.getElementById('m-cfg-providers-sheet').value.trim()||'ProviderEmails';
+  CFG.clientSummarySheet=document.getElementById('m-cfg-clientsummary-sheet').value.trim()||'ClientSummary';
+  CFG.coaHistorySheet=document.getElementById('m-cfg-coahistory-sheet').value.trim()||'COAHistory';
+  CFG.deletedSheet=document.getElementById('m-cfg-deleted-sheet').value.trim()||'Deleted';
+  localStorage.setItem('strata_cfg2',JSON.stringify(CFG));
+  toast('Sheet names saved','success');
+  const msg=document.getElementById('m-sheets-msg');
+  msg.textContent='✓ Sheet names saved.'; msg.className='settings-msg ok';
+  setTimeout(()=>msg.textContent='',3000);
+}
+
+function toggleDarkM(){
+  const isDark=!document.body.classList.contains('dark');
+  document.body.classList.toggle('dark',isDark);
+  localStorage.setItem('strata_dark',isDark?'1':'0');
+  const tog=document.getElementById('dark-toggle-m');
+  if(tog) tog.classList.toggle('on',isDark);
+  const btn=document.getElementById('hdr-dark-btn');
+  if(btn) btn.textContent=isDark?'☀️':'🌙';
+}
+function initDarkBtn(){
+  const isDark=document.body.classList.contains('dark');
+  const btn=document.getElementById('hdr-dark-btn');
+  if(btn) btn.textContent=isDark?'☀️':'🌙';
+}
+
+// ── PROVIDERS ──
+function providerToRow(p){ return[p.provider,p.email,p.honorifics,p.contact,p.cc]; }
+
+function openProviders(){
+  navigate('providers','Providers');
+  setHdrMode('providers');
+  renderProviders();
+}
+
+function renderProviders(){
+  const cont=document.getElementById('prov-list'); if(!cont) return;
+  if(!PROVIDERS.length){
+    cont.innerHTML=`<div class="empty-st"><div class="empty-icon">◆</div><div class="empty-title">No providers</div><div class="empty-sub">Tap + New to add a provider email contact.</div></div>`;
+    return;
+  }
+  cont.innerHTML=PROVIDERS.map((p,i)=>`
+    <div class="prov-card" onclick="openProviderEdit(${i})">
+      <div class="prov-name">${esc(p.provider||'—')}</div>
+      <div class="prov-rows">
+        <div class="prov-row"><span class="prov-lbl">Contact</span><span class="prov-val">${esc(p.honorifics?p.honorifics+' ':'')}${esc(p.contact||'—')}</span></div>
+        <div class="prov-row"><span class="prov-lbl">Email</span><span class="prov-val"><a href="mailto:${esc(p.email||'')}" style="color:var(--accent2)" onclick="event.stopPropagation()">${esc(p.email||'—')}</a></span></div>
+        ${p.cc?`<div class="prov-row"><span class="prov-lbl">CC</span><span class="prov-val">${esc(p.cc)}</span></div>`:''}
+      </div>
+    </div>`).join('');
+  cont.innerHTML+=`<div class="cc-count">${PROVIDERS.length} provider${PROVIDERS.length!==1?'s':''}</div>`;
+}
+
+// ── PROVIDER ADD / EDIT ──
+let _editProviderIdx=null;
+function openProviderEdit(idx){
+  _editProviderIdx=idx;
+  const p=idx!==null?PROVIDERS[idx]:{};
+  navigate('provider-edit', idx!==null?'Edit Provider':'New Provider');
+  setHdrMode('provider-edit');
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
+  set('pe-provider',p.provider); set('pe-honorifics',p.honorifics);
+  set('pe-contact',p.contact); set('pe-email',p.email); set('pe-cc',p.cc);
+  document.getElementById('prov-edit-error').textContent='';
+  document.getElementById('pe-delete-zone').style.display=idx!==null?'block':'none';
+}
+
+async function saveProviderM(){
+  const provider=document.getElementById('pe-provider').value.trim();
+  const errEl=document.getElementById('prov-edit-error');
+  if(!provider){ errEl.textContent='Provider name is required.'; return; }
+  errEl.textContent='';
+  document.getElementById('hdr-save-btn').disabled=true;
+  const isNew=_editProviderIdx===null;
+  const rec={
+    provider, honorifics:document.getElementById('pe-honorifics').value.trim(),
+    contact:document.getElementById('pe-contact').value.trim(),
+    email:document.getElementById('pe-email').value.trim(),
+    cc:document.getElementById('pe-cc').value.trim(),
+    _row:isNew?null:PROVIDERS[_editProviderIdx]._row,
+  };
+  if(isNew){ PROVIDERS.push(rec); }else{ PROVIDERS[_editProviderIdx]=rec; }
+  saveLocalData();
+  document.getElementById('hdr-save-btn').disabled=false;
+  toast(isNew?'Provider added ✓':'Provider saved ✓','success');
+  writeBack(CFG.providersSheet,rec,providerToRow,_editProviderIdx,PROVIDERS,isNew);
+  _navStack.pop();
+  showScreen('providers','Providers');
+  setHdrMode('providers');
+  renderProviders();
+}
+
+// ── PROVIDER DELETE ──
+function showProviderDeleteSheetM(){
+  const idx=_editProviderIdx; if(idx===null) return;
+  _pendingDeleteType='provider'; _pendingDeleteIdx=idx;
+  const p=PROVIDERS[idx];
+  document.getElementById('del-desc').innerHTML=`<div style="padding:8px 20px 14px;font-size:14px;color:var(--text2)"><span class="del-name">${esc(p.provider||'—')}</span></div>`;
+  document.getElementById('del-passcode').value='';
+  document.getElementById('del-error').textContent='';
+  document.getElementById('del-confirm-btn').disabled=false;
+  document.getElementById('del-confirm-btn').textContent='Delete Provider';
+  document.getElementById('del-overlay').classList.add('visible');
+  document.getElementById('del-sheet').classList.add('open');
+}
+
+// ── OVERRIDE showScreen to manage header state ──
+const _origShowScreen=showScreen;
+showScreen=function(id,title){
+  _origShowScreen(id,title);
+  const isRoot=ROOT_TABS.includes(id);
+  if(id==='clients') setHdrMode('clients');
+  else if(id==='coa') setHdrMode('coa');
+  else if(id==='quotations') setHdrMode('quotations');
+  else if(id==='providers') setHdrMode('providers');
+  else if(isRoot) setHdrMode('default');
+  // detail/edit modes set by their own open functions
+};
+
+// ── XSS guard ──
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',()=>{
+  if(localStorage.getItem('strata_dark')==='1') document.body.classList.add('dark');
+  initDarkBtn();
+  checkSession();
+  setTimeout(()=>{ if(!_gsiReady&&window.google&&window.google.accounts) gsiLoaded(); },500);
+});
+</script>
+<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+</body>
+</html>

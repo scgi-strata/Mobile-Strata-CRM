@@ -17,6 +17,15 @@
 <script src="https://accounts.google.com/gsi/client" onload="gsiLoaded()"></script>
 <script>
   if(localStorage.getItem('strata_dark')==='1') document.documentElement.classList.add('dark-early');
+  // Capture PWA install prompt
+  window._pwaPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    window._pwaPrompt = e;
+    // Show install button if settings screen is open
+    const btn = document.getElementById('install-app-btn');
+    if(btn) btn.style.display = 'block';
+  });
   // Generate fallback PWA icon if no icon-192.png exists
   (function(){
     try {
@@ -876,6 +885,20 @@ textarea.form-input { min-height:90px; resize:vertical; }
         <div class="toggle-row">
           <span class="toggle-label">Dark Mode</span>
           <button class="toggle-switch" id="dark-toggle-m" onclick="toggleDarkM()"></button>
+        </div>
+      </div>
+
+      <!-- Install App -->
+      <div class="settings-card">
+        <h3>Install App</h3>
+        <p>Add Strata CRM to your home screen for quick access — opens fullscreen, no browser bar.</p>
+        <!-- Android Chrome: shown when PWA prompt available -->
+        <button id="install-app-btn" class="sync-btn-m" style="display:none;margin-bottom:10px" onclick="installPWA()">
+          ⬇ Add to Home Screen
+        </button>
+        <!-- iOS Safari: always show manual instructions -->
+        <div id="ios-install-hint" style="font-size:12px;color:var(--text2);line-height:1.7;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong>iPhone/iPad:</strong> Tap the <strong>Share</strong> button (□↑) in Safari → <strong>Add to Home Screen</strong>
         </div>
       </div>
 
@@ -2753,10 +2776,25 @@ async function deleteRecordM(type,idx){
 }
 
 // ── SETTINGS ──
+function installPWA(){
+  if(!window._pwaPrompt){ toast('Install prompt not available. Use browser menu → Add to Home Screen.'); return; }
+  window._pwaPrompt.prompt();
+  window._pwaPrompt.userChoice.then(result => {
+    if(result.outcome === 'accepted'){
+      toast('Strata CRM installed ✓','success');
+      document.getElementById('install-app-btn').style.display='none';
+      window._pwaPrompt = null;
+    }
+  });
+}
+
 function openSettings(){
   navigate('settings','Settings');
   setHdrMode('default');
   loadCFGToForm();
+  // Show install button if prompt is ready
+  const btn = document.getElementById('install-app-btn');
+  if(btn) btn.style.display = window._pwaPrompt ? 'block' : 'none';
   // Dark mode toggle state
   const isDark=document.body.classList.contains('dark');
   const tog=document.getElementById('dark-toggle-m');

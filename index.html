@@ -2231,14 +2231,14 @@ function scheduleWrite(key,fn){
     if(p) await p();
   },WRITE_DELAY);
 }
-async function writeBack(sheet,rec,rowFn,idx,collection,isNew){
+async function writeBack(sheet,rec,rowFn,idx,collection,isNew,afterSave){
   const key=sheet+':'+(isNew?'new':(rec._row||idx));
   scheduleWrite(key,async()=>{
     setSyncStatus('saving');
     const token=(window.gapi&&gapi.client&&gapi.client.getToken)?gapi.client.getToken():null;
     if(!token||!token.access_token){
       setSyncStatus('error');
-      requestWriteAccess(()=>writeBack(sheet,rec,rowFn,idx,collection,isNew));
+      requestWriteAccess(()=>writeBack(sheet,rec,rowFn,idx,collection,isNew,afterSave));
       return;
     }
     try{
@@ -2251,9 +2251,10 @@ async function writeBack(sheet,rec,rowFn,idx,collection,isNew){
         }
       } else { await updateSheetRow(sheet,(rec._row||(idx+2)),row); }
       setSyncStatus('live'); toast('Saved to Google Sheets ✓','success');
+      if(afterSave) await afterSave();
     }catch(e){
       setSyncStatus('error');
-      if(e.status===401||e.status===403){ gapi.client.setToken(null); requestWriteAccess(()=>writeBack(sheet,rec,rowFn,idx,collection,isNew)); }
+      if(e.status===401||e.status===403){ gapi.client.setToken(null); requestWriteAccess(()=>writeBack(sheet,rec,rowFn,idx,collection,isNew,afterSave)); }
       else { toast('Saved locally. Sheets error: '+e.message,'error'); }
     }
   });
@@ -2703,9 +2704,10 @@ async function saveClientM(){
     [oldRec.notes,rec.notes],[oldRec.docs,rec.docs],
   ].some(([o,n])=>(o||'').trim()!==(n||'').trim());
 
+  const _saveTs=new Date().toLocaleString('en-PH');
   const changeNote=meaningfulChange?buildHistoryChangeNote(oldRec,rec,isNew):'';
   if(meaningfulChange){
-    CLIENT_HISTORY.unshift({timestamp:new Date().toLocaleString('en-PH'),clientId:rec.id,client:rec.name,
+    CLIENT_HISTORY.unshift({timestamp:_saveTs,clientId:rec.id,client:rec.name,
       contact:rec.contact,status:rec.status,contactType:rec.contactType,lastContact:rec.lastContact,
       nextFollowUp:rec.nextFollowUp,assigned:rec.assigned,notes:changeNote,editedBy:AUTH.name||''});
   }
@@ -2728,14 +2730,12 @@ async function saveClientM(){
     renderClients();
   }
 
-  writeBack(CFG.clientsSheet,rec,clientToRow,myIdx,CLIENTS,isNew);
-  if(meaningfulChange){
-    appendHistoryWithRetry(CFG.clientSummarySheet||'ClientSummary',
-      [new Date().toLocaleString('en-PH'),rec.id,rec.name,rec.address||'',rec.contact,rec.designation||'',
-       rec.mobile,rec.email,rec.industry||'',rec.bizType,rec.insType,rec.currentProvider,rec.renewal,
-       rec.provider,rec.status,rec.contactType,rec.lastContact,rec.nextFollowUp,
-       rec.assigned,changeNote,rec.docs||'',AUTH.name||''],'ClientSummary');
-  }
+  const _histRow=meaningfulChange?[_saveTs,rec.id,rec.name,rec.address||'',rec.contact,rec.designation||'',
+    rec.mobile,rec.email,rec.industry||'',rec.bizType,rec.insType,rec.currentProvider,rec.renewal,
+    rec.provider,rec.status,rec.contactType,rec.lastContact,rec.nextFollowUp,
+    rec.assigned,changeNote,rec.docs||'',AUTH.name||'']:null;
+  writeBack(CFG.clientsSheet,rec,clientToRow,myIdx,CLIENTS,isNew,
+    _histRow?async()=>{ await appendHistoryWithRetry(CFG.clientSummarySheet||'ClientSummary',_histRow,'ClientSummary'); }:null);
 }
 
 // ── DELETE CLIENT ──

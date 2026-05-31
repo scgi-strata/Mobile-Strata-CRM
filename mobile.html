@@ -558,6 +558,17 @@ textarea.form-input { min-height:90px; resize:vertical; }
 }
 .btn-danger-m:active { background:var(--red); color:#fff; }
 
+/* ── CLIENT FILTER SHEET ── */
+#cf-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:170; }
+#cf-overlay.visible { display:block; }
+#cf-sheet {
+  position:fixed; left:0; right:0; bottom:0; background:var(--surface);
+  border-radius:20px 20px 0 0; z-index:180;
+  padding:0 0 calc(16px + var(--safe-b));
+  transform:translateY(100%); transition:transform 0.3s ease;
+}
+#cf-sheet.open { transform:translateY(0); }
+
 /* ── DELETE CONFIRM SHEET ── */
 #del-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:170; }
 #del-overlay.visible { display:block; }
@@ -680,9 +691,14 @@ textarea.form-input { min-height:90px; resize:vertical; }
 
     <!-- CLIENTS LIST -->
     <div id="screen-clients" class="screen">
-      <div class="search-wrap">
-        <span class="search-icon">⌕</span>
-        <input type="search" id="clients-search" placeholder="Search clients…" autocomplete="off" oninput="renderClients()">
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+        <div class="search-wrap" style="flex:1;margin-bottom:0">
+          <span class="search-icon">⌕</span>
+          <input type="search" id="clients-search" placeholder="Search clients…" autocomplete="off" oninput="renderClients()">
+        </div>
+        <button id="client-filter-btn" onclick="openClientFilterSheet()" style="flex-shrink:0;height:46px;padding:0 14px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);font-family:inherit;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+          ⊞ Filter <span id="client-filter-count" style="display:none;background:var(--accent2);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">0</span>
+        </button>
       </div>
       <div class="filter-row">
         <button class="filter-chip active" id="fc-active" onclick="setClientFilter('active')">Active</button>
@@ -1158,6 +1174,25 @@ textarea.form-input { min-height:90px; resize:vertical; }
   </div>
 
 </div><!-- /app -->
+
+<!-- CLIENT FILTER SHEET -->
+<div id="cf-overlay" onclick="closeClientFilterSheet()"></div>
+<div id="cf-sheet">
+  <div class="sheet-handle"></div>
+  <div style="padding:0 20px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:600">Filter Clients</div>
+      <button onclick="clearClientFilters()" style="border:none;background:none;font-family:inherit;font-size:12px;color:var(--accent2);cursor:pointer;font-weight:600">Clear all</button>
+    </div>
+    <div class="form-section-title">Assigned To</div>
+    <div class="chip-group" id="cf-assigned-chips" style="margin-bottom:16px"></div>
+    <div class="form-section-title">Insurance Type</div>
+    <div class="chip-group" id="cf-instype-chips" style="margin-bottom:16px"></div>
+    <div class="form-section-title">Sort By</div>
+    <div class="chip-group" id="cf-sort-chips" style="margin-bottom:20px"></div>
+    <button class="sync-btn-m" onclick="applyClientFilters()">Apply Filters</button>
+  </div>
+</div>
 
 <!-- DELETE CONFIRM SHEET -->
 <div id="del-overlay" onclick="closeDeleteSheet()"></div>
@@ -2397,12 +2432,80 @@ function setHdrMode(mode){
 
 // ── CLIENT FILTER STATE ──
 let _clientFilter='active';
+let _cfAssigned='', _cfInsType='', _cfSort='followup';
+
 function setClientFilter(f){
   _clientFilter=f;
-  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#screen-clients .filter-chip').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('fc-'+f); if(btn) btn.classList.add('active');
   renderClients();
 }
+
+// ── CLIENT FILTER SHEET ──
+function openClientFilterSheet(){
+  // Build assigned chips
+  const assignedEl=document.getElementById('cf-assigned-chips');
+  assignedEl.innerHTML=CONFIG_ASSIGNED.map(a=>
+    `<button type="button" class="chip-opt ${_cfAssigned===a?'active':''}" data-val="${esc(a)}" onclick="selectSingleChip(this,'cf-assigned-chips')">${esc(a)}</button>`
+  ).join('');
+
+  // Build insurance type chips
+  const insEl=document.getElementById('cf-instype-chips');
+  insEl.innerHTML=CONFIG_INS_TYPES.map(t=>
+    `<button type="button" class="chip-opt ${_cfInsType===t?'active':''}" data-val="${esc(t)}" onclick="selectSingleChip(this,'cf-instype-chips')">${esc(t)}</button>`
+  ).join('');
+
+  // Build sort chips
+  const sortOpts=[
+    {val:'followup',label:'Next Follow-up'},
+    {val:'renewal',label:'Renewal Date'},
+    {val:'name',label:'Name A–Z'},
+    {val:'lastcontact',label:'Last Contact'},
+  ];
+  const sortEl=document.getElementById('cf-sort-chips');
+  sortEl.innerHTML=sortOpts.map(s=>
+    `<button type="button" class="chip-opt ${_cfSort===s.val?'active':''}" data-val="${s.val}" onclick="selectSingleChip(this,'cf-sort-chips')">${s.label}</button>`
+  ).join('');
+
+  document.getElementById('cf-overlay').classList.add('visible');
+  document.getElementById('cf-sheet').classList.add('open');
+}
+
+function closeClientFilterSheet(){
+  document.getElementById('cf-overlay').classList.remove('visible');
+  document.getElementById('cf-sheet').classList.remove('open');
+}
+
+function selectSingleChip(btn,containerId){
+  // Toggle: click active = deselect, click inactive = select (deselect others)
+  const wasActive=btn.classList.contains('active');
+  document.querySelectorAll(`#${containerId} .chip-opt`).forEach(b=>b.classList.remove('active'));
+  if(!wasActive) btn.classList.add('active');
+}
+
+function applyClientFilters(){
+  _cfAssigned=document.querySelector('#cf-assigned-chips .chip-opt.active')?.dataset.val||'';
+  _cfInsType=document.querySelector('#cf-instype-chips .chip-opt.active')?.dataset.val||'';
+  _cfSort=document.querySelector('#cf-sort-chips .chip-opt.active')?.dataset.val||'followup';
+  closeClientFilterSheet();
+  updateClientFilterBadge();
+  renderClients();
+}
+
+function clearClientFilters(){
+  _cfAssigned=''; _cfInsType=''; _cfSort='followup';
+  document.querySelectorAll('#cf-assigned-chips .chip-opt,#cf-instype-chips .chip-opt').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#cf-sort-chips .chip-opt').forEach((b,i)=>b.classList.toggle('active',i===0));
+  updateClientFilterBadge();
+  renderClients();
+}
+
+function updateClientFilterBadge(){
+  const count=(_cfAssigned?1:0)+(_cfInsType?1:0);
+  const badge=document.getElementById('client-filter-count');
+  const btn=document.getElementById('client-filter-btn');
+  if(badge){ badge.textContent=count; badge.style.display=count?'inline':'none'; }
+  if(btn) btn.style.borderColor=count?'var(--accent2)':'';
 
 // ── CLIENTS LIST ──
 function renderClients(){
@@ -2414,17 +2517,29 @@ function renderClients(){
   if(_clientFilter==='revisit') list=list.filter(c=>c.status==='Revisit');
   // 'all' = no filter
 
-  if(q) list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.assigned||'').toLowerCase().includes(q)||(c.status||'').toLowerCase().includes(q)||(c.provider||'').toLowerCase().includes(q)||(c.notes||'').toLowerCase().includes(q));
+  if(q) list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.id||'').toLowerCase().includes(q)||(c.assigned||'').toLowerCase().includes(q)||(c.status||'').toLowerCase().includes(q)||(c.provider||'').toLowerCase().includes(q)||(c.notes||'').toLowerCase().includes(q));
 
-  // Sort: overdue first, then by nextFollowUp ascending
-  list.sort((a,b)=>{
-    const aOver=a.nextFollowUp&&new Date(a.nextFollowUp)<TODAY;
-    const bOver=b.nextFollowUp&&new Date(b.nextFollowUp)<TODAY;
-    if(aOver&&!bOver) return -1; if(!aOver&&bOver) return 1;
-    const ad=a.nextFollowUp?new Date(a.nextFollowUp):new Date('9999');
-    const bd=b.nextFollowUp?new Date(b.nextFollowUp):new Date('9999');
-    return ad-bd;
-  });
+  // Apply extra filters
+  if(_cfAssigned) list=list.filter(c=>(c.assigned||'').split(',').map(a=>a.trim()).includes(_cfAssigned));
+  if(_cfInsType)  list=list.filter(c=>c.insType===_cfInsType);
+
+  // Sort
+  if(_cfSort==='followup'){
+    list.sort((a,b)=>{
+      const aOver=a.nextFollowUp&&new Date(a.nextFollowUp)<TODAY;
+      const bOver=b.nextFollowUp&&new Date(b.nextFollowUp)<TODAY;
+      if(aOver&&!bOver) return -1; if(!aOver&&bOver) return 1;
+      const ad=a.nextFollowUp?new Date(a.nextFollowUp):new Date('9999');
+      const bd=b.nextFollowUp?new Date(b.nextFollowUp):new Date('9999');
+      return ad-bd;
+    });
+  } else if(_cfSort==='renewal'){
+    list.sort((a,b)=>{ const ad=pd(a.renewal)||new Date('9999'); const bd=pd(b.renewal)||new Date('9999'); return ad-bd; });
+  } else if(_cfSort==='name'){
+    list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  } else if(_cfSort==='lastcontact'){
+    list.sort((a,b)=>{ const ad=pd(a.lastContact)||new Date(0); const bd=pd(b.lastContact)||new Date(0); return bd-ad; });
+  }
 
   const cont=document.getElementById('clients-list'); if(!cont) return;
   if(!list.length){ cont.innerHTML=`<div class="empty-st"><div class="empty-icon">◎</div><div class="empty-title">No clients found</div><div class="empty-sub">Try a different filter or search term.</div></div>`; return; }
@@ -2446,7 +2561,10 @@ function renderClients(){
 
     return`<div class="client-card ${borderCls}" onclick="openClientDetail(${realIdx})">
       <div class="cc-top">
-        <div class="cc-name">${esc(c.name)}</div>
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:2px">${esc(c.id||'')}</div>
+          <div class="cc-name">${esc(c.name)}</div>
+        </div>
         ${stBadge(c.status)}
       </div>
       <div class="cc-rows">

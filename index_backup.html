@@ -531,18 +531,6 @@ textarea.form-input { min-height:90px; resize:vertical; }
 #del-desc { font-size:14px; color:var(--text2); line-height:1.6; padding:4px 20px 14px; }
 .del-name { font-weight:600; color:var(--text); }
 
-/* ── CLIENT FILTER SHEET ── */
-#cf-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:170; }
-#cf-overlay.visible { display:block; }
-#cf-sheet {
-  position:fixed; left:0; right:0; bottom:0; background:var(--surface);
-  border-radius:20px 20px 0 0; z-index:180;
-  padding:0 0 calc(16px + var(--safe-b));
-  transform:translateY(100%); transition:transform 0.3s ease;
-  max-height:80vh; overflow-y:auto;
-}
-#cf-sheet.open { transform:translateY(0); }
-
 /* ── CONTACT CARDS (multi-contact) ── */
 .contact-card {
   background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
@@ -651,12 +639,9 @@ textarea.form-input { min-height:90px; resize:vertical; }
 
     <!-- CLIENTS LIST -->
     <div id="screen-clients" class="screen">
-      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
-        <div class="search-wrap" style="flex:1;margin-bottom:0">
-          <span class="search-icon">⌕</span>
-          <input type="search" id="clients-search" placeholder="Search clients…" autocomplete="off" oninput="renderClients()">
-        </div>
-        <button id="client-filter-btn" onclick="openClientFilterSheet()" style="flex-shrink:0;height:46px;padding:0 14px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);font-family:inherit;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">⊟ Filter <span id="client-filter-count" style="display:none;background:var(--accent2);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;font-family:'DM Mono',monospace"></span></button>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="search" id="clients-search" placeholder="Search clients…" autocomplete="off" oninput="renderClients()">
       </div>
       <div class="filter-row">
         <button class="filter-chip active" id="fc-active" onclick="setClientFilter('active')">Active</button>
@@ -1120,33 +1105,6 @@ textarea.form-input { min-height:90px; resize:vertical; }
 </div><!-- /app -->
 
 <!-- DELETE CONFIRM SHEET -->
-<!-- CLIENT FILTER SHEET -->
-<div id="cf-overlay" onclick="closeClientFilterSheet()"></div>
-<div id="cf-sheet">
-  <div class="sheet-handle"></div>
-  <div style="padding:0 20px 4px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-size:16px;font-weight:600">Filter Clients</div>
-      <button onclick="clearClientFilters()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--accent2);cursor:pointer;padding:4px 0">Clear all</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Assigned To</label>
-      <div class="chip-group" id="cf-assigned-chips"></div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Insurance Type</label>
-      <div class="chip-group" id="cf-instype-chips"></div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Sort By</label>
-      <div class="chip-group" id="cf-sort-chips"></div>
-    </div>
-    <div style="margin-top:16px;padding-bottom:4px">
-      <button class="sync-btn-m" onclick="applyClientFilters()">Apply Filters</button>
-    </div>
-  </div>
-</div>
-
 <div id="del-overlay" onclick="closeDeleteSheet()"></div>
 <div id="del-sheet">
   <div class="sheet-handle"></div>
@@ -2384,59 +2342,11 @@ function setHdrMode(mode){
 
 // ── CLIENT FILTER STATE ──
 let _clientFilter='active';
-let _cfAssigned='', _cfInsType='', _cfSort='followup';
-
 function setClientFilter(f){
   _clientFilter=f;
   document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('fc-'+f); if(btn) btn.classList.add('active');
   renderClients();
-}
-
-// ── CLIENT FILTER SHEET ──
-function openClientFilterSheet(){
-  document.getElementById('cf-assigned-chips').innerHTML=CONFIG_ASSIGNED.map(a=>
-    `<button type="button" class="chip-opt ${_cfAssigned===a?'active':''}" data-val="${esc(a)}" onclick="selectSingleChip(this,'cf-assigned-chips')">${esc(a)}</button>`
-  ).join('');
-  document.getElementById('cf-instype-chips').innerHTML=CONFIG_INS_TYPES.map(t=>
-    `<button type="button" class="chip-opt ${_cfInsType===t?'active':''}" data-val="${esc(t)}" onclick="selectSingleChip(this,'cf-instype-chips')">${esc(t)}</button>`
-  ).join('');
-  const sortOpts=[{val:'followup',label:'Next Follow-up'},{val:'renewal',label:'Renewal Date'},{val:'name',label:'Name A–Z'},{val:'lastcontact',label:'Last Contact'}];
-  document.getElementById('cf-sort-chips').innerHTML=sortOpts.map(s=>
-    `<button type="button" class="chip-opt ${_cfSort===s.val?'active':''}" data-val="${s.val}" onclick="selectSingleChip(this,'cf-sort-chips')">${s.label}</button>`
-  ).join('');
-  document.getElementById('cf-overlay').classList.add('visible');
-  document.getElementById('cf-sheet').classList.add('open');
-}
-function closeClientFilterSheet(){
-  document.getElementById('cf-overlay').classList.remove('visible');
-  document.getElementById('cf-sheet').classList.remove('open');
-}
-function selectSingleChip(btn,containerId){
-  const wasActive=btn.classList.contains('active');
-  document.querySelectorAll(`#${containerId} .chip-opt`).forEach(b=>b.classList.remove('active'));
-  if(!wasActive) btn.classList.add('active');
-}
-function applyClientFilters(){
-  _cfAssigned=document.querySelector('#cf-assigned-chips .chip-opt.active')?.dataset.val||'';
-  _cfInsType=document.querySelector('#cf-instype-chips .chip-opt.active')?.dataset.val||'';
-  _cfSort=document.querySelector('#cf-sort-chips .chip-opt.active')?.dataset.val||'followup';
-  closeClientFilterSheet();
-  updateClientFilterBadge();
-  renderClients();
-}
-function clearClientFilters(){
-  _cfAssigned=''; _cfInsType=''; _cfSort='followup';
-  closeClientFilterSheet();
-  updateClientFilterBadge();
-  renderClients();
-}
-function updateClientFilterBadge(){
-  const count=(_cfAssigned?1:0)+(_cfInsType?1:0);
-  const badge=document.getElementById('client-filter-count');
-  const btn=document.getElementById('client-filter-btn');
-  if(badge){ badge.textContent=count; badge.style.display=count?'inline':'none'; }
-  if(btn) btn.style.borderColor=count?'var(--accent2)':'var(--border2)';
 }
 
 // ── CLIENTS LIST ──
@@ -2449,30 +2359,17 @@ function renderClients(){
   if(_clientFilter==='revisit') list=list.filter(c=>c.status==='Revisit');
   // 'all' = no filter
 
-  if(q) list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.id||'').toLowerCase().includes(q)||(c.assigned||'').toLowerCase().includes(q)||(c.status||'').toLowerCase().includes(q)||(c.provider||'').toLowerCase().includes(q)||(c.notes||'').toLowerCase().includes(q));
+  if(q) list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.assigned||'').toLowerCase().includes(q)||(c.status||'').toLowerCase().includes(q)||(c.provider||'').toLowerCase().includes(q)||(c.notes||'').toLowerCase().includes(q));
 
-  // Extra filters
-  if(_cfAssigned) list=list.filter(c=>(c.assigned||'').split(',').map(a=>a.trim()).includes(_cfAssigned));
-  if(_cfInsType)  list=list.filter(c=>c.insType===_cfInsType);
-
-  // Sort
-  if(_cfSort==='renewal'){
-    list.sort((a,b)=>{ const ad=a.renewal?new Date(a.renewal):new Date('9999'); const bd=b.renewal?new Date(b.renewal):new Date('9999'); return ad-bd; });
-  } else if(_cfSort==='name'){
-    list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  } else if(_cfSort==='lastcontact'){
-    list.sort((a,b)=>{ const ad=a.lastContact?new Date(a.lastContact):new Date(0); const bd=b.lastContact?new Date(b.lastContact):new Date(0); return bd-ad; });
-  } else {
-    // default: followup — overdue first, then ascending
-    list.sort((a,b)=>{
-      const aOver=a.nextFollowUp&&new Date(a.nextFollowUp)<TODAY;
-      const bOver=b.nextFollowUp&&new Date(b.nextFollowUp)<TODAY;
-      if(aOver&&!bOver) return -1; if(!aOver&&bOver) return 1;
-      const ad=a.nextFollowUp?new Date(a.nextFollowUp):new Date('9999');
-      const bd=b.nextFollowUp?new Date(b.nextFollowUp):new Date('9999');
-      return ad-bd;
-    });
-  }
+  // Sort: overdue first, then by nextFollowUp ascending
+  list.sort((a,b)=>{
+    const aOver=a.nextFollowUp&&new Date(a.nextFollowUp)<TODAY;
+    const bOver=b.nextFollowUp&&new Date(b.nextFollowUp)<TODAY;
+    if(aOver&&!bOver) return -1; if(!aOver&&bOver) return 1;
+    const ad=a.nextFollowUp?new Date(a.nextFollowUp):new Date('9999');
+    const bd=b.nextFollowUp?new Date(b.nextFollowUp):new Date('9999');
+    return ad-bd;
+  });
 
   const cont=document.getElementById('clients-list'); if(!cont) return;
   if(!list.length){ cont.innerHTML=`<div class="empty-st"><div class="empty-icon">◎</div><div class="empty-title">No clients found</div><div class="empty-sub">Try a different filter or search term.</div></div>`; return; }
@@ -2494,10 +2391,7 @@ function renderClients(){
 
     return`<div class="client-card ${borderCls}" onclick="openClientDetail(${realIdx})">
       <div class="cc-top">
-        <div style="min-width:0;flex:1">
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:2px">${esc(c.id||'')}</div>
-          <div class="cc-name">${esc(c.name)}</div>
-        </div>
+        <div class="cc-name">${esc(c.name)}</div>
         ${stBadge(c.status)}
       </div>
       <div class="cc-rows">
